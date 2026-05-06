@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Brazo 7 ejes + Pinza - WebSerial</title>
+  <style>
+    :root{
+      color-scheme: light;
+      --bg:#edf2f8;
+      --panel:#ffffff;
+      --panel-soft:#f8fafc;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#dbe3ee;
+      --primary:#2563eb;
+      --primary-dark:#1d4ed8;
+      --primary-soft:#dbeafe;
+      --success:#16a34a;
+      --warning:#f97316;
+      --danger:#dc2626;
+      --shadow:0 18px 45px rgba(15,23,42,.10);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37,99,235,.22), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(14,165,233,.16), transparent 35%),
+        var(--bg);
+    }
+
+    .app{
+      width:min(1180px, calc(100% - 28px));
+      margin:0 auto;
+      padding:24px 0 34px;
+    }
+
+    .hero{
+      position:relative;
+      overflow:hidden;
+      border-radius:30px;
+      padding:26px;
+      background:
+        linear-gradient(135deg, rgba(15,23,42,.94), rgba(30,64,175,.90)),
+        linear-gradient(135deg, #0f172a, #2563eb);
+      color:white;
+      box-shadow:var(--shadow);
+      display:grid;
+      grid-template-columns:1.6fr .9fr;
+      gap:22px;
+      align-items:end;
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:auto -90px -130px auto;
+      width:320px;
+      height:320px;
+      border-radius:999px;
+      background:rgba(255,255,255,.12);
+    }
+
+    .eyebrow{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      width:max-content;
+      margin-bottom:12px;
+      padding:7px 11px;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      background:rgba(255,255,255,.10);
+      font-size:13px;
+      color:#dbeafe;
+    }
+
+    h1{
+      margin:0;
+      font-size:clamp(30px, 4vw, 48px);
+      line-height:1.03;
+      letter-spacing:-.04em;
+    }
+
+    .hero p{
+      margin:14px 0 0;
+      max-width:760px;
+      color:#dbeafe;
+      font-size:16px;
+      line-height:1.6;
+    }
+
+    .hero-panel{
+      position:relative;
+      z-index:1;
+      padding:18px;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:22px;
+      background:rgba(255,255,255,.10);
+      backdrop-filter:blur(10px);
+    }
+
+    .hero-panel .metric{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 0;
+      border-bottom:1px solid rgba(255,255,255,.12);
+      color:#dbeafe;
+      font-size:14px;
+    }
+
+    .hero-panel .metric:last-child{border-bottom:0}
+    .hero-panel b{color:#fff}
+
+    .layout{
+      display:grid;
+      grid-template-columns:minmax(0, 1fr) 360px;
+      gap:18px;
+      margin-top:18px;
+      align-items:start;
+    }
+
+    .stack{display:grid;gap:18px}
+
+    .card{
+      border:1px solid rgba(219,227,238,.95);
+      border-radius:var(--radius);
+      padding:18px;
+      background:rgba(255,255,255,.92);
+      box-shadow:0 12px 32px rgba(15,23,42,.07);
+      backdrop-filter:blur(8px);
+    }
+
+    .card-header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:16px;
+    }
+
+    h2,h3{margin:0}
+    h2{font-size:20px;letter-spacing:-.02em}
+    h3{font-size:17px;letter-spacing:-.01em}
+
+    .subtitle,
+    .small{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.45;
+    }
+
+    .mono{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size:.95em;
+    }
+
+    .button-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    button{
+      appearance:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-height:42px;
+      padding:10px 14px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      font-weight:750;
+      cursor:pointer;
+      box-shadow:0 4px 12px rgba(15,23,42,.06);
+      transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+    }
+
+    button:hover:not(:disabled){
+      transform:translateY(-1px);
+      box-shadow:0 9px 20px rgba(15,23,42,.10);
+      border-color:#bfdbfe;
+    }
+
+    button:active:not(:disabled){transform:translateY(0)}
+
+    button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      box-shadow:none;
+    }
+
+    .btn-primary{
+      border-color:transparent;
+      background:linear-gradient(135deg, var(--primary), #0ea5e9);
+      color:white;
+    }
+
+    .btn-soft{background:var(--panel-soft)}
+    .btn-danger{color:var(--danger);border-color:#fecaca;background:#fff7f7}
+    .btn-play{color:white;border-color:transparent;background:linear-gradient(135deg, #16a34a, #22c55e)}
+
+    .status-box{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top:14px;
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#f8fafc;
+    }
+
+    .status-dot{
+      width:10px;
+      height:10px;
+      flex:0 0 10px;
+      border-radius:999px;
+      background:var(--warning);
+      box-shadow:0 0 0 5px rgba(249,115,22,.12);
+    }
+
+    #st{overflow-wrap:anywhere}
+
+    .row{
+      display:grid;
+      grid-template-columns:130px minmax(0,1fr) 86px;
+      gap:12px;
+      align-items:center;
+      margin:12px 0;
+      padding:10px;
+      border:1px solid #eef2f7;
+      border-radius:16px;
+      background:linear-gradient(180deg, #fff, #fbfdff);
+    }
+
+    .row b{font-size:14px}
+
+    .joint-label{
+      display:flex;
+      align-items:center;
+      gap:9px;
+    }
+
+    .joint-index{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:30px;
+      height:30px;
+      border-radius:11px;
+      color:#1d4ed8;
+      background:var(--primary-soft);
+      font-weight:850;
+      font-size:13px;
+    }
+
+    input[type=range]{
+      width:100%;
+      accent-color:var(--primary);
+      cursor:pointer;
+    }
+
+    input[type=number],
+    select,
+    textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+      color:var(--text);
+      outline:none;
+      transition:border-color .15s ease, box-shadow .15s ease;
+    }
+
+    input[type=number]{
+      padding:10px 9px;
+      font-weight:750;
+      text-align:center;
+    }
+
+    select{padding:10px;min-height:214px}
+
+    textarea{
+      min-height:140px;
+      padding:12px;
+      resize:vertical;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    input[type=number]:focus,
+    select:focus,
+    textarea:focus{
+      border-color:#93c5fd;
+      box-shadow:0 0 0 4px rgba(37,99,235,.12);
+    }
+
+    .grid2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+
+    .surface{
+      padding:14px;
+      border-radius:18px;
+      background:var(--panel-soft);
+      border:1px solid #eef2f7;
+    }
+
+    label{
+      display:flex;
+      gap:9px;
+      align-items:center;
+      width:max-content;
+      font-weight:750;
+      color:#334155;
+      user-select:none;
+    }
+
+    input[type=checkbox]{
+      width:18px;
+      height:18px;
+      accent-color:var(--primary);
+    }
+
+    .hint{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      margin-top:10px;
+      padding:12px;
+      border-radius:16px;
+      background:#eff6ff;
+      color:#1e3a8a;
+      font-size:14px;
+      line-height:1.45;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#f1f5f9;
+      color:#475569;
+      font-size:13px;
+      font-weight:750;
+      white-space:nowrap;
+    }
+
+    .divider{height:10px}
+
+    @media (max-width: 920px){
+      .hero,
+      .layout,
+      .grid2{grid-template-columns:1fr}
+      .hero{padding:22px}
+    }
+
+    @media (max-width: 620px){
+      .app{width:min(100% - 18px, 1180px);padding-top:10px}
+      .hero{border-radius:22px}
+      .card{padding:14px;border-radius:18px}
+      .row{
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+      input[type=number]{text-align:left}
+      .button-row button{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">⚙️ Panel WebSerial · Arduino UNO</div>
+        <h1>Brazo robótico de 7 ejes + pinza</h1>
+        <p>Interfaz de control para mover articulaciones, ajustar velocidades, guardar poses y reproducir secuencias desde el navegador.</p>
+      </div>
+      <aside class="hero-panel" aria-label="Resumen del sistema">
+        <div class="metric"><span>Pines J1..J7</span><b class="mono">{2,4,11,6,8,10,5}</b></div>
+        <div class="metric"><span>Pinza J7</span><b>95° – 180°</b></div>
+        <div class="metric"><span>Velocidad</span><b>J1–J3 independiente</b></div>
+      </aside>
+    </section>
+
+    <section class="layout">
+      <div class="stack">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Control principal</h2>
+              <div class="subtitle">Conecta el Arduino, lee el estado o manda el brazo a Home.</div>
+            </div>
+            <span class="pill">115200 baud</span>
+          </div>
+
+          <div class="button-row">
+            <button id="btnConn" class="btn-primary">🔌 Conectar</button>
+            <button id="btnHome" class="btn-soft" disabled>🏠 Home</button>
+            <button id="btnQuery" class="btn-soft" disabled>📡 Leer estado</button>
+            <button id="btnStopPlay" class="btn-danger" disabled>⏹ Parar reproducción</button>
+          </div>
+
+          <div class="status-box">
+            <span class="status-dot"></span>
+            <div class="small mono" id="st">Sin conectar</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Articulaciones</h2>
+              <div class="subtitle">Ajuste manual de cada eje. La pinza está limitada entre 95° y 180°.</div>
+            </div>
+            <span class="pill">7 canales</span>
+          </div>
+          <div id="joints"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Velocidades y suavidad</h2>
+              <div class="subtitle">Control de velocidad global, velocidad independiente de J1–J3 y aceleración.</div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="joint-label"><span class="joint-index">VG</span><b>Vel global</b></div>
+            <input id="spd" type="range" min="1" max="180" value="60">
+            <input id="spdN" type="number" min="1" max="180" value="60">
+          </div>
+          <div class="hint">ℹ️ Afecta a <b>J4–J7</b>, incluida la pinza. J1–J3 usan V1, V2 y V3.</div>
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <div class="joint-label"><span class="joint-index">V1</span><b>Vel J1</b></div>
+            <input id="v1" type="range" min="1" max="180" value="60">
+            <input id="v1N" type="number" min="1" max="180" value="60">
+          </div>
+
+          <div class="row">
+            <div class="joint-label"><span class="joint-index">V2</span><b>Vel J2</b></div>
+            <input id="v2" type="range" min="1" max="180" value="60">
+            <input id="v2N" type="number" min="1" max="180" value="60">
+          </div>
+
+          <div class="row">
+            <div class="joint-label"><span class="joint-index">V3</span><b>Vel J3</b></div>
+            <input id="v3" type="range" min="1" max="180" value="60">
+            <input id="v3N" type="number" min="1" max="180" value="60">
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <div class="joint-label"><span class="joint-index">A</span><b>Aceleración</b></div>
+            <input id="acc" type="range" min="10" max="1200" value="300">
+            <input id="accN" type="number" min="10" max="1200" value="300">
+          </div>
+          <div class="hint">🧭 Acc = grados/seg². Un valor más bajo genera movimientos más suaves.</div>
+        </div>
+      </div>
+
+      <aside class="stack">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Poses</h2>
+              <div class="subtitle">Guarda posiciones y repítelas como una secuencia.</div>
+            </div>
+          </div>
+
+          <div class="surface">
+            <div class="button-row">
+              <button id="btnSave" class="btn-primary" disabled>💾 Guardar pose</button>
+              <button id="btnDelete" class="btn-soft" disabled>🗑 Borrar</button>
+              <button id="btnClear" class="btn-danger" disabled>Vaciar</button>
+            </div>
+
+            <div class="divider"></div>
+            <label><input type="checkbox" id="loop" /> Bucle</label>
+
+            <div class="row">
+              <div class="joint-label"><span class="joint-index">ms</span><b>Delay</b></div>
+              <input id="delay" type="range" min="100" max="5000" value="800">
+              <input id="delayN" type="number" min="100" max="5000" value="800">
+            </div>
+
+            <div class="small">Tiempo entre poses. Si el brazo tarda más en llegar, súbelo.</div>
+
+            <div class="divider"></div>
+            <button id="btnPlay" class="btn-play" disabled>▶ Reproducir secuencia</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Lista de poses</h2>
+              <div class="subtitle">Selecciona una pose para cargar sus valores.</div>
+            </div>
+          </div>
+          <select id="poseList" size="9"></select>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Exportar / importar</h2>
+              <div class="subtitle">Copia o pega secuencias en formato JSON.</div>
+            </div>
+          </div>
+
+          <textarea id="io" placeholder='Pulsa "Exportar" para ver el JSON aquí, o pega uno y pulsa "Importar".'></textarea>
+
+          <div class="button-row" style="margin-top:10px">
+            <button id="btnExport" class="btn-soft" disabled>⬇ Exportar</button>
+            <button id="btnImport" class="btn-soft" disabled>⬆ Importar</button>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+<script>
+const N = 7;
+const names = ["J1","J2","J3","J4","J5","J6","PINZA"];
+const mins  = [0,0,0,0,0,0,95];
+const maxs  = [180,180,180,180,180,180,180];
+
+let port, reader, writer;
+let readLoopRunning = false;
+
+let poses = [];           // {name, vals:[..7..]}
+let isPlaying = false;
+let playAbort = false;
+
+const st = (t)=> document.getElementById('st').textContent = t;
+const el = (id)=> document.getElementById(id);
+function clamp(v,a,b){ v = parseInt(v||0,10); return Math.min(b, Math.max(a,v)); }
+
+function loadFromStorage(){
+  try{
+    const raw = localStorage.getItem("arm_poses_v2");
+    if(raw){
+      const data = JSON.parse(raw);
+      if(Array.isArray(data)) poses = data;
+    }
+  }catch(e){}
+  renderPoseList();
+}
+function saveToStorage(){
+  localStorage.setItem("arm_poses_v2", JSON.stringify(poses));
+}
+
+function buildJoints(){
+  const box = el("joints");
+  box.innerHTML = "";
+  for(let i=0;i<N;i++){
+    const min = mins[i], max = maxs[i];
+    const init = (i===N-1) ? 120 : 90; // pinza inicia >95
+    const d = document.createElement("div");
+    d.className = "row";
+    d.innerHTML = `
+      <div class="joint-label"><span class="joint-index">${names[i] === "PINZA" ? "P" : names[i]}</span><b>${names[i]}</b></div>
+      <input id="j${i}" type="range" min="${min}" max="${max}" value="${init}">
+      <input id="j${i}n" type="number" min="${min}" max="${max}" value="${init}">
+    `;
+    box.appendChild(d);
+
+    const r = el(`j${i}`);
+    const n = el(`j${i}n`);
+    r.addEventListener("input", ()=>{ n.value = r.value; queueSendPose(); });
+    n.addEventListener("input", ()=>{ r.value = clamp(n.value,min,max); queueSendPose(); });
+  }
+}
+
+function setControlsEnabled(on){
+  el("btnHome").disabled = !on;
+  el("btnQuery").disabled = !on;
+  el("btnSave").disabled = !on;
+  el("btnDelete").disabled = !on;
+  el("btnClear").disabled = !on;
+  el("btnPlay").disabled = !on;
+  el("btnStopPlay").disabled = !on;
+  el("btnExport").disabled = !on;
+  el("btnImport").disabled = !on;
+}
+
+async function connect(){
+  if(!("serial" in navigator)){
+    st("Este navegador no soporta Web Serial (usa Chrome/Edge).");
+    return;
+  }
+  port = await navigator.serial.requestPort();
+  await port.open({ baudRate: 115200 });
+
+  writer = port.writable.getWriter();
+  reader = port.readable.getReader();
+
+  st("Conectado. (El UNO suele resetear al abrir el puerto)");
+  setControlsEnabled(true);
+
+  // espera reset
+  await new Promise(r => setTimeout(r, 1800));
+  startReadLoop();
+  await sendLine("<Q>");
+}
+
+async function sendLine(s){
+  if(!writer) return;
+  await writer.write(new TextEncoder().encode(s + "\n"));
+}
+
+function startReadLoop(){
+  if(readLoopRunning) return;
+  readLoopRunning = true;
+
+  const dec = new TextDecoder();
+  let buf = "";
+
+  (async ()=>{
+    while(true){
+      const { value, done } = await reader.read();
+      if(done) break;
+
+      buf += dec.decode(value, {stream:true});
+      let idx;
+      while((idx = buf.indexOf("\n")) >= 0){
+        const line = buf.slice(0, idx).trim();
+        buf = buf.slice(idx+1);
+        if(line) handleLine(line);
+      }
+    }
+  })().catch(()=>{ st("Lectura detenida."); });
+}
+
+function handleLine(line){
+  st("RX: " + line);
+
+  const frames = line.match(/<[^>]*>/g) || [];
+  for(const f of frames){
+    const inner = f.slice(1,-1);
+    const parts = inner.split(",");
+    const cmd = parts[0];
+
+    if(cmd === "T" && parts.length === 1+N){
+      for(let i=0;i<N;i++){
+        const v = clamp(parts[i+1], mins[i], maxs[i]);
+        el(`j${i}`).value = v;
+        el(`j${i}n`).value = v;
+      }
+    }
+    if(cmd === "S" && parts.length === 2){
+      const v = clamp(parts[1],1,180);
+      el("spd").value = v; el("spdN").value = v;
+    }
+    if(cmd === "V" && parts.length === 4){
+      const a = clamp(parts[1],1,180);
+      const b = clamp(parts[2],1,180);
+      const c = clamp(parts[3],1,180);
+      el("v1").value = a; el("v1N").value = a;
+      el("v2").value = b; el("v2N").value = b;
+      el("v3").value = c; el("v3N").value = c;
+    }
+    if(cmd === "A" && parts.length === 2){
+      const v = clamp(parts[1],10,1200);
+      el("acc").value = v; el("accN").value = v;
+    }
+  }
+}
+
+// --- Throttle envíos ---
+let poseTimer=null, spdTimer=null, vTimer=null, accTimer=null;
+
+function queueSendPose(){
+  if(!writer || isPlaying) return;
+  clearTimeout(poseTimer);
+  poseTimer = setTimeout(sendPose, 40);
+}
+function queueSendSpeed(){
+  if(!writer) return;
+  clearTimeout(spdTimer);
+  spdTimer = setTimeout(sendSpeed, 120);
+}
+function queueSendV(){
+  if(!writer) return;
+  clearTimeout(vTimer);
+  vTimer = setTimeout(sendV, 120);
+}
+function queueSendAccel(){
+  if(!writer) return;
+  clearTimeout(accTimer);
+  accTimer = setTimeout(sendAccel, 120);
+}
+
+async function sendPose(valsOverride=null){
+  const vals = valsOverride ?? Array.from({length:N}, (_,i)=> clamp(el(`j${i}`).value, mins[i], maxs[i]));
+  await sendLine(`<P,${vals.join(",")}>`);
+}
+async function sendSpeed(){
+  await sendLine(`<S,${clamp(el("spd").value,1,180)}>`); // global
+}
+async function sendV(){
+  const a = clamp(el("v1").value,1,180);
+  const b = clamp(el("v2").value,1,180);
+  const c = clamp(el("v3").value,1,180);
+  await sendLine(`<V,${a},${b},${c}>`);
+}
+async function sendAccel(){
+  await sendLine(`<A,${clamp(el("acc").value,10,1200)}>`); // acc
+}
+
+// --- UI listeners ---
+function hookControls(){
+  // Vel global
+  el("spd").addEventListener("input", ()=>{ el("spdN").value = el("spd").value; queueSendSpeed(); });
+  el("spdN").addEventListener("input", ()=>{ el("spd").value = clamp(el("spdN").value,1,180); queueSendSpeed(); });
+
+  // V1-V3
+  el("v1").addEventListener("input", ()=>{ el("v1N").value = el("v1").value; queueSendV(); });
+  el("v1N").addEventListener("input", ()=>{ el("v1").value = clamp(el("v1N").value,1,180); queueSendV(); });
+
+  el("v2").addEventListener("input", ()=>{ el("v2N").value = el("v2").value; queueSendV(); });
+  el("v2N").addEventListener("input", ()=>{ el("v2").value = clamp(el("v2N").value,1,180); queueSendV(); });
+
+  el("v3").addEventListener("input", ()=>{ el("v3N").value = el("v3").value; queueSendV(); });
+  el("v3N").addEventListener("input", ()=>{ el("v3").value = clamp(el("v3N").value,1,180); queueSendV(); });
+
+  // Acc
+  el("acc").addEventListener("input", ()=>{ el("accN").value = el("acc").value; queueSendAccel(); });
+  el("accN").addEventListener("input", ()=>{ el("acc").value = clamp(el("accN").value,10,1200); queueSendAccel(); });
+
+  // Delay
+  el("delay").addEventListener("input", ()=>{ el("delayN").value = el("delay").value; });
+  el("delayN").addEventListener("input", ()=>{ el("delay").value = clamp(el("delayN").value,100,5000); });
+}
+
+// --- Poses ---
+function currentVals(){
+  return Array.from({length:N}, (_,i)=> clamp(el(`j${i}`).value, mins[i], maxs[i]));
+}
+function renderPoseList(){
+  const list = el("poseList");
+  list.innerHTML = "";
+  poses.forEach((p, idx)=>{
+    const opt = document.createElement("option");
+    opt.value = String(idx);
+    opt.textContent = `${idx+1}. ${p.name}  [${p.vals.join(", ")}]`;
+    list.appendChild(opt);
+  });
+}
+function savePose(){
+  poses.push({ name: `Pose ${poses.length+1}`, vals: currentVals() });
+  saveToStorage();
+  renderPoseList();
+}
+function deleteSelectedPose(){
+  const idx = el("poseList").selectedIndex;
+  if(idx < 0) return;
+  poses.splice(idx, 1);
+  saveToStorage();
+  renderPoseList();
+}
+function clearPoses(){
+  poses = [];
+  saveToStorage();
+  renderPoseList();
+}
+
+function delayMs(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function playPoses(){
+  if(!writer) return;
+  if(poses.length === 0){ st("No hay poses guardadas."); return; }
+  if(isPlaying) return;
+
+  isPlaying = true;
+  playAbort = false;
+  el("btnPlay").disabled = true;
+
+  // Aplica settings antes de arrancar
+  await sendSpeed();
+  await sendV();
+  await sendAccel();
+
+  const loop = el("loop").checked;
+  const stepDelay = clamp(el("delay").value, 100, 5000);
+
+  try{
+    do{
+      for(let i=0;i<poses.length;i++){
+        if(playAbort) break;
+        const vals = poses[i].vals.map((v, j)=> clamp(v, mins[j], maxs[j]));
+        await sendPose(vals);
+        await delayMs(stepDelay);
+      }
+      if(playAbort) break;
+    }while(loop);
+  }finally{
+    isPlaying = false;
+    playAbort = false;
+    el("btnPlay").disabled = false;
+  }
+}
+
+function stopPlay(){
+  playAbort = true;
+  st("Reproducción parada.");
+}
+
+// --- IO export/import ---
+function exportPoses(){
+  el("io").value = JSON.stringify(poses, null, 2);
+}
+function importPoses(){
+  try{
+    const data = JSON.parse(el("io").value);
+    if(!Array.isArray(data)){ st("Import: JSON inválido (no es array)."); return; }
+    // validación mínima
+    const cleaned = [];
+    for(const p of data){
+      if(!p || !Array.isArray(p.vals) || p.vals.length !== N) continue;
+      cleaned.push({
+        name: String(p.name || `Pose ${cleaned.length+1}`),
+        vals: p.vals.map((v,i)=> clamp(v, mins[i], maxs[i]))
+      });
+    }
+    poses = cleaned;
+    saveToStorage();
+    renderPoseList();
+    st("Import OK.");
+  }catch(e){
+    st("Import: JSON inválido.");
+  }
+}
+
+// --- Botones principales ---
+el("btnConn").addEventListener("click", ()=>connect().catch(e=>st("Error: " + e)));
+el("btnHome").addEventListener("click", ()=>sendLine("<H>").catch(()=>{}));
+el("btnQuery").addEventListener("click", ()=>sendLine("<Q>").catch(()=>{}));
+
+el("btnSave").addEventListener("click", savePose);
+el("btnDelete").addEventListener("click", deleteSelectedPose);
+el("btnClear").addEventListener("click", clearPoses);
+el("btnPlay").addEventListener("click", playPoses);
+el("btnStopPlay").addEventListener("click", stopPlay);
+
+el("btnExport").addEventListener("click", exportPoses);
+el("btnImport").addEventListener("click", importPoses);
+
+el("poseList").addEventListener("change", ()=>{
+  const idx = el("poseList").selectedIndex;
+  if(idx >= 0 && poses[idx]){
+    const vals = poses[idx].vals;
+    for(let i=0;i<N;i++){
+      const v = clamp(vals[i], mins[i], maxs[i]);
+      el(`j${i}`).value = v;
+      el(`j${i}n`).value = v;
+    }
+  }
+});
+
+// Init
+buildJoints();
+hookControls();
+loadFromStorage();
+setControlsEnabled(false);
+</script>
+</body>
+</html>
