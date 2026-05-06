@@ -3,890 +3,343 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Brazo 6 ejes + Pinza - WebSerial</title>
+  <title>Brazo 6 ejes + Pinza - WebSerial ESP32</title>
   <style>
-    :root{
-      color-scheme: light;
-      --bg:#edf2f8;
-      --panel:#ffffff;
-      --panel-soft:#f8fafc;
-      --text:#0f172a;
-      --muted:#64748b;
-      --line:#dbe3ee;
-      --primary:#2563eb;
-      --primary-dark:#1d4ed8;
-      --primary-soft:#dbeafe;
-      --success:#16a34a;
-      --warning:#f97316;
-      --danger:#dc2626;
-      --shadow:0 18px 45px rgba(15,23,42,.10);
-      --radius:22px;
-    }
-
-    *{box-sizing:border-box}
-
-    body{
-      margin:0;
-      min-height:100vh;
-      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      color:var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(37,99,235,.22), transparent 35%),
-        radial-gradient(circle at bottom right, rgba(14,165,233,.16), transparent 35%),
-        var(--bg);
-    }
-
-    .app{
-      width:min(1180px, calc(100% - 28px));
-      margin:0 auto;
-      padding:24px 0 34px;
-    }
-
-    .hero{
-      position:relative;
-      overflow:hidden;
-      border-radius:30px;
-      padding:26px;
-      background:
-        linear-gradient(135deg, rgba(15,23,42,.94), rgba(30,64,175,.90)),
-        linear-gradient(135deg, #0f172a, #2563eb);
-      color:white;
-      box-shadow:var(--shadow);
-      display:grid;
-      grid-template-columns:1.6fr .9fr;
-      gap:22px;
-      align-items:end;
-    }
-
-    .hero::after{
-      content:"";
-      position:absolute;
-      inset:auto -90px -130px auto;
-      width:320px;
-      height:320px;
-      border-radius:999px;
-      background:rgba(255,255,255,.12);
-    }
-
-    .eyebrow{
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      width:max-content;
-      margin-bottom:12px;
-      padding:7px 11px;
-      border:1px solid rgba(255,255,255,.18);
-      border-radius:999px;
-      background:rgba(255,255,255,.10);
-      font-size:13px;
-      color:#dbeafe;
-    }
-
-    h1{
-      margin:0;
-      font-size:clamp(30px, 4vw, 48px);
-      line-height:1.03;
-      letter-spacing:-.04em;
-    }
-
-    .hero p{
-      margin:14px 0 0;
-      max-width:760px;
-      color:#dbeafe;
-      font-size:16px;
-      line-height:1.6;
-    }
-
-    .hero-panel{
-      position:relative;
-      z-index:1;
-      padding:18px;
-      border:1px solid rgba(255,255,255,.18);
-      border-radius:22px;
-      background:rgba(255,255,255,.10);
-      backdrop-filter:blur(10px);
-    }
-
-    .hero-panel .metric{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      padding:10px 0;
-      border-bottom:1px solid rgba(255,255,255,.12);
-      color:#dbeafe;
-      font-size:14px;
-    }
-
-    .hero-panel .metric:last-child{border-bottom:0}
-    .hero-panel b{color:#fff}
-
-    .layout{
-      display:grid;
-      grid-template-columns:minmax(0, 1fr) 360px;
-      gap:18px;
-      margin-top:18px;
-      align-items:start;
-    }
-
-    .stack{display:grid;gap:18px}
-
-    .card{
-      border:1px solid rgba(219,227,238,.95);
-      border-radius:var(--radius);
-      padding:18px;
-      background:rgba(255,255,255,.92);
-      box-shadow:0 12px 32px rgba(15,23,42,.07);
-      backdrop-filter:blur(8px);
-    }
-
-    .card-header{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      margin-bottom:16px;
-    }
-
-    h2,h3{margin:0}
-    h2{font-size:20px;letter-spacing:-.02em}
-    h3{font-size:17px;letter-spacing:-.01em}
-
-    .subtitle,
-    .small{
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.45;
-    }
-
-    .mono{
-      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      font-size:.95em;
-    }
-
-    .button-row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    button{
-      appearance:none;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      min-height:42px;
-      padding:10px 14px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background:#fff;
-      color:var(--text);
-      font-weight:750;
-      cursor:pointer;
-      box-shadow:0 4px 12px rgba(15,23,42,.06);
-      transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
-    }
-
-    button:hover:not(:disabled){
-      transform:translateY(-1px);
-      box-shadow:0 9px 20px rgba(15,23,42,.10);
-      border-color:#bfdbfe;
-    }
-
-    button:active:not(:disabled){transform:translateY(0)}
-
-    button:disabled{
-      opacity:.45;
-      cursor:not-allowed;
-      box-shadow:none;
-    }
-
-    .btn-primary{
-      border-color:transparent;
-      background:linear-gradient(135deg, var(--primary), #0ea5e9);
-      color:white;
-    }
-
-    .btn-soft{background:var(--panel-soft)}
-    .btn-danger{color:var(--danger);border-color:#fecaca;background:#fff7f7}
-    .btn-play{color:white;border-color:transparent;background:linear-gradient(135deg, #16a34a, #22c55e)}
-
-    .status-box{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      margin-top:14px;
-      padding:12px 14px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      background:#f8fafc;
-    }
-
-    .status-dot{
-      width:10px;
-      height:10px;
-      flex:0 0 10px;
-      border-radius:999px;
-      background:var(--warning);
-      box-shadow:0 0 0 5px rgba(249,115,22,.12);
-    }
-
-    #st{overflow-wrap:anywhere}
-
-    .row{
-      display:grid;
-      grid-template-columns:130px minmax(0,1fr) 86px;
-      gap:12px;
-      align-items:center;
-      margin:12px 0;
-      padding:10px;
-      border:1px solid #eef2f7;
-      border-radius:16px;
-      background:linear-gradient(180deg, #fff, #fbfdff);
-    }
-
-    .row b{font-size:14px}
-
-    .joint-label{
-      display:flex;
-      align-items:center;
-      gap:9px;
-    }
-
-    .joint-index{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:30px;
-      height:30px;
-      border-radius:11px;
-      color:#1d4ed8;
-      background:var(--primary-soft);
-      font-weight:850;
-      font-size:13px;
-    }
-
-    input[type=range]{
-      width:100%;
-      accent-color:var(--primary);
-      cursor:pointer;
-    }
-
-    input[type=number],
-    select,
-    textarea{
-      width:100%;
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:#fff;
-      color:var(--text);
-      outline:none;
-      transition:border-color .15s ease, box-shadow .15s ease;
-    }
-
-    input[type=number]{
-      padding:10px 9px;
-      font-weight:750;
-      text-align:center;
-    }
-
-    select{padding:10px;min-height:214px}
-
-    textarea{
-      min-height:140px;
-      padding:12px;
-      resize:vertical;
-      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size:13px;
-      line-height:1.45;
-    }
-
-    input[type=number]:focus,
-    select:focus,
-    textarea:focus{
-      border-color:#93c5fd;
-      box-shadow:0 0 0 4px rgba(37,99,235,.12);
-    }
-
-    .grid2{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:16px;
-    }
-
-    .surface{
-      padding:14px;
-      border-radius:18px;
-      background:var(--panel-soft);
-      border:1px solid #eef2f7;
-    }
-
-    label{
-      display:flex;
-      gap:9px;
-      align-items:center;
-      width:max-content;
-      font-weight:750;
-      color:#334155;
-      user-select:none;
-    }
-
-    input[type=checkbox]{
-      width:18px;
-      height:18px;
-      accent-color:var(--primary);
-    }
-
-    .hint{
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-      margin-top:10px;
-      padding:12px;
-      border-radius:16px;
-      background:#eff6ff;
-      color:#1e3a8a;
-      font-size:14px;
-      line-height:1.45;
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:7px;
-      padding:6px 10px;
-      border-radius:999px;
-      background:#f1f5f9;
-      color:#475569;
-      font-size:13px;
-      font-weight:750;
-      white-space:nowrap;
-    }
-
-    .divider{height:10px}
-
-    @media (max-width: 920px){
-      .hero,
-      .layout,
-      .grid2{grid-template-columns:1fr}
-      .hero{padding:22px}
-    }
-
-    @media (max-width: 620px){
-      .app{width:min(100% - 18px, 1180px);padding-top:10px}
-      .hero{border-radius:22px}
-      .card{padding:14px;border-radius:18px}
-      .row{
-        grid-template-columns:1fr;
-        gap:8px;
-      }
-      input[type=number]{text-align:left}
-      .button-row button{width:100%}
-    }
+    :root{color-scheme:light;--bg:#edf2f8;--panel:#fff;--panel-soft:#f8fafc;--text:#0f172a;--muted:#64748b;--line:#dbe3ee;--primary:#2563eb;--primary-dark:#1d4ed8;--primary-soft:#dbeafe;--success:#16a34a;--warning:#f97316;--danger:#dc2626;--shadow:0 18px 45px rgba(15,23,42,.10);--radius:22px}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(37,99,235,.22),transparent 35%),radial-gradient(circle at bottom right,rgba(14,165,233,.16),transparent 35%),var(--bg)}.app{width:min(1280px,calc(100% - 28px));margin:0 auto;padding:24px 0 34px}.hero{position:relative;overflow:hidden;border-radius:30px;padding:26px;background:linear-gradient(135deg,rgba(15,23,42,.94),rgba(30,64,175,.90)),linear-gradient(135deg,#0f172a,#2563eb);color:white;box-shadow:var(--shadow);display:grid;grid-template-columns:1.6fr .9fr;gap:22px;align-items:end}.hero::after{content:"";position:absolute;inset:auto -90px -130px auto;width:320px;height:320px;border-radius:999px;background:rgba(255,255,255,.12)}.eyebrow{display:inline-flex;gap:8px;align-items:center;width:max-content;margin-bottom:12px;padding:7px 11px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.10);font-size:13px;color:#dbeafe}h1{margin:0;font-size:clamp(30px,4vw,48px);line-height:1.03;letter-spacing:-.04em}.hero p{margin:14px 0 0;max-width:760px;color:#dbeafe;font-size:16px;line-height:1.6}.hero-panel{position:relative;z-index:1;padding:18px;border:1px solid rgba(255,255,255,.18);border-radius:22px;background:rgba(255,255,255,.10);backdrop-filter:blur(10px)}.hero-panel .metric{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.12);color:#dbeafe;font-size:14px}.hero-panel .metric:last-child{border-bottom:0}.hero-panel b{color:#fff}.layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:18px;margin-top:18px;align-items:start}.stack{display:grid;gap:18px}.card{border:1px solid rgba(219,227,238,.95);border-radius:var(--radius);padding:18px;background:rgba(255,255,255,.92);box-shadow:0 12px 32px rgba(15,23,42,.07);backdrop-filter:blur(8px)}.card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}h2,h3{margin:0}h2{font-size:20px;letter-spacing:-.02em}h3{font-size:17px;letter-spacing:-.01em}.subtitle,.small{color:var(--muted);font-size:14px;line-height:1.45}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:.95em}.button-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}button{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 13px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--text);font-weight:750;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.06);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease}button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 9px 20px rgba(15,23,42,.10);border-color:#bfdbfe}button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}.btn-primary{border-color:transparent;background:linear-gradient(135deg,var(--primary),#0ea5e9);color:white}.btn-soft{background:var(--panel-soft)}.btn-danger{color:var(--danger);border-color:#fecaca;background:#fff7f7}.btn-play{color:white;border-color:transparent;background:linear-gradient(135deg,#16a34a,#22c55e)}.status-box{display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:#f8fafc}.status-dot{width:10px;height:10px;flex:0 0 10px;border-radius:999px;background:var(--warning);box-shadow:0 0 0 5px rgba(249,115,22,.12)}#st{overflow-wrap:anywhere}.row{display:grid;grid-template-columns:130px minmax(0,1fr) 86px;gap:12px;align-items:center;margin:12px 0;padding:10px;border:1px solid #eef2f7;border-radius:16px;background:linear-gradient(180deg,#fff,#fbfdff)}.joint-label{display:flex;align-items:center;gap:9px}.joint-index{display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border-radius:11px;color:#1d4ed8;background:var(--primary-soft);font-weight:850;font-size:13px}input[type=range]{width:100%;accent-color:var(--primary);cursor:pointer}input[type=number],input[type=text],select,textarea{width:100%;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--text);outline:none;transition:border-color .15s ease,box-shadow .15s ease}input[type=number],input[type=text],select{padding:10px 9px;min-height:40px}input[type=number]{font-weight:750;text-align:center}select[multiple]{min-height:214px}textarea{min-height:140px;padding:12px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.45}input:focus,select:focus,textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 4px rgba(37,99,235,.12)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.surface{padding:14px;border-radius:18px;background:var(--panel-soft);border:1px solid #eef2f7}label{display:flex;gap:9px;align-items:center;width:max-content;font-weight:750;color:#334155;user-select:none}.hint{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:12px;border-radius:16px;background:#eff6ff;color:#1e3a8a;font-size:14px;line-height:1.45}.pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:13px;font-weight:750;white-space:nowrap}.divider{height:10px}.io-card,.step-card{display:grid;gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:16px;background:white;margin-bottom:10px}.step-card{border-left:5px solid #60a5fa}.step-tools{display:flex;gap:6px;flex-wrap:wrap}.step-tools button{min-height:32px;padding:6px 9px;border-radius:10px}.field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.log{height:330px;overflow:auto;background:#0f172a;color:#dbeafe;border-radius:16px;padding:12px;font-size:12px;line-height:1.45}.log div{border-bottom:1px solid rgba(255,255,255,.07);padding:3px 0}.tx{color:#93c5fd}.rx{color:#86efac}.err{color:#fca5a5}.run{color:#fde68a}.jsonbox{min-height:220px}@media (max-width:920px){.hero,.layout,.grid2,.grid3{grid-template-columns:1fr}.hero{padding:22px}}@media (max-width:620px){.app{width:min(100% - 18px,1180px);padding-top:10px}.hero{border-radius:22px}.card{padding:14px;border-radius:18px}.row{grid-template-columns:1fr;gap:8px}input[type=number]{text-align:left}.button-row button{width:100%}}
   </style>
 </head>
 <body>
-  <main class="app">
-    <section class="hero">
-      <div>
-        <div class="eyebrow">⚙️ Panel WebSerial · Arduino UNO / ESP32 puente</div>
-        <h1>Brazo robótico de 6 ejes + pinza</h1>
-        <p>Interfaz de control para mover articulaciones, ajustar velocidades, guardar poses y reproducir secuencias desde el navegador.</p>
-      </div>
-      <aside class="hero-panel" aria-label="Resumen del sistema">
-        <div class="metric"><span>Pines J1..J7</span><b class="mono">{2,4,11,6,8,10,5}</b></div>
-        <div class="metric"><span>Pinza J7</span><b>95° – 180°</b></div>
-        <div class="metric"><span>Velocidad</span><b>J1–J3 independiente</b></div>
-      </aside>
-    </section>
-
-    <section class="layout">
-      <div class="stack">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2>Control principal</h2>
-              <div class="subtitle">Conecta el Arduino directo o el ESP32 en modo puente, lee el estado o manda el brazo a Home.</div>
-            </div>
-            <span class="pill">115200 baud</span>
-          </div>
-
-          <div class="button-row">
-            <button id="btnConn" class="btn-primary">🔌 Conectar</button>
-            <button id="btnHome" class="btn-soft" disabled>🏠 Home</button>
-            <button id="btnQuery" class="btn-soft" disabled>📡 Leer estado</button>
-            <button id="btnStopPlay" class="btn-danger" disabled>⏹ Parar reproducción</button>
-          </div>
-
-          <div class="status-box">
-            <span class="status-dot"></span>
-            <div class="small mono" id="st">Sin conectar</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2>Articulaciones</h2>
-              <div class="subtitle">Ajuste manual de cada eje. La pinza está limitada entre 95° y 180°.</div>
-            </div>
-            <span class="pill">7 canales</span>
-          </div>
-          <div id="joints"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2>Velocidades y suavidad</h2>
-              <div class="subtitle">Control de velocidad global, velocidad independiente de J1–J3 y aceleración.</div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="joint-label"><span class="joint-index">VG</span><b>Vel global</b></div>
-            <input id="spd" type="range" min="1" max="180" value="60">
-            <input id="spdN" type="number" min="1" max="180" value="60">
-          </div>
-          <div class="hint">ℹ️ Afecta a <b>J4–J7</b>, incluida la pinza. J1–J3 usan V1, V2 y V3.</div>
-
-          <div class="divider"></div>
-
-          <div class="row">
-            <div class="joint-label"><span class="joint-index">V1</span><b>Vel J1</b></div>
-            <input id="v1" type="range" min="1" max="180" value="60">
-            <input id="v1N" type="number" min="1" max="180" value="60">
-          </div>
-
-          <div class="row">
-            <div class="joint-label"><span class="joint-index">V2</span><b>Vel J2</b></div>
-            <input id="v2" type="range" min="1" max="180" value="60">
-            <input id="v2N" type="number" min="1" max="180" value="60">
-          </div>
-
-          <div class="row">
-            <div class="joint-label"><span class="joint-index">V3</span><b>Vel J3</b></div>
-            <input id="v3" type="range" min="1" max="180" value="60">
-            <input id="v3N" type="number" min="1" max="180" value="60">
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="row">
-            <div class="joint-label"><span class="joint-index">A</span><b>Aceleración</b></div>
-            <input id="acc" type="range" min="10" max="1200" value="300">
-            <input id="accN" type="number" min="10" max="1200" value="300">
-          </div>
-          <div class="hint">🧭 Acc = grados/seg². Un valor más bajo genera movimientos más suaves.</div>
-        </div>
-      </div>
-
-      <aside class="stack">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2>Poses</h2>
-              <div class="subtitle">Guarda posiciones y repítelas como una secuencia.</div>
-            </div>
-          </div>
-
-          <div class="surface">
-            <div class="button-row">
-              <button id="btnSave" class="btn-primary" disabled>💾 Guardar pose</button>
-              <button id="btnDelete" class="btn-soft" disabled>🗑 Borrar</button>
-              <button id="btnClear" class="btn-danger" disabled>Vaciar</button>
-            </div>
-
-            <div class="divider"></div>
-            <label><input type="checkbox" id="loop" /> Bucle</label>
-
-            <div class="row">
-              <div class="joint-label"><span class="joint-index">ms</span><b>Delay</b></div>
-              <input id="delay" type="range" min="100" max="5000" value="800">
-              <input id="delayN" type="number" min="100" max="5000" value="800">
-            </div>
-
-            <div class="small">Tiempo entre poses. Si el brazo tarda más en llegar, súbelo.</div>
-
-            <div class="divider"></div>
-            <button id="btnPlay" class="btn-play" disabled>▶ Reproducir secuencia</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2>Lista de poses</h2>
-              <div class="subtitle">Selecciona una pose para cargar sus valores.</div>
-            </div>
-          </div>
-          <select id="poseList" size="9"></select>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2>Exportar / importar</h2>
-              <div class="subtitle">Copia o pega secuencias en formato JSON.</div>
-            </div>
-          </div>
-
-          <textarea id="io" placeholder='Pulsa "Exportar" para ver el JSON aquí, o pega uno y pulsa "Importar".'></textarea>
-
-          <div class="button-row" style="margin-top:10px">
-            <button id="btnExport" class="btn-soft" disabled>⬇ Exportar</button>
-            <button id="btnImport" class="btn-soft" disabled>⬆ Importar</button>
-          </div>
-        </div>
-      </aside>
-    </section>
-  </main>
-
+<main class="app">
+  <section class="hero">
+<div>
+<div class="eyebrow">⚙️ Panel WebSerial · ESP32 controlador principal</div>
+<h1>Brazo robótico de 6 ejes + pinza</h1>
+<p>Interfaz visual para mover articulaciones, guardar poses, configurar entradas/salidas del ESP32 y ejecutar secuencias enviando al Arduino UNO solo comandos de movimiento.</p>
+</div>
+<aside class="hero-panel">
+<div class="metric">
+<span>Arquitectura</span>
+<b>WebSerial → ESP32 → Arduino</b>
+</div>
+<div class="metric">
+<span>Pines Arduino J1..J7</span>
+<b class="mono">{2,4,11,6,8,10,5}</b>
+</div>
+<div class="metric">
+<span>Pinza J7</span>
+<b>95° – 180°</b>
+</div>
+<div class="metric">
+<span>UART ESP32</span>
+<b>RX16 / TX17 · 115200</b>
+</div>
+</aside>
+</section>
+  <section class="layout">
+<div class="stack">
+    <div class="card">
+<div class="card-header">
+<div>
+<h2>Control principal</h2>
+<div class="subtitle">Conecta el ESP32 por USB. También mantiene los comandos directos compatibles del brazo.</div>
+</div>
+<span class="pill">115200 baud</span>
+</div>
+<div class="button-row">
+<button id="btnConn" class="btn-primary">🔌 Conectar</button>
+<button id="btnPing" class="btn-soft" disabled>🏓 Ping ESP32</button>
+<button id="btnHome" class="btn-soft" disabled>🏠 Home</button>
+<button id="btnQuery" class="btn-soft" disabled>📡 Leer brazo</button>
+<button id="btnStopPlay" class="btn-danger" disabled>⏹ Parar reproducción local</button>
+</div>
+<div class="status-box">
+<span class="status-dot">
+</span>
+<div class="small mono" id="st">Sin conectar</div>
+</div>
+</div>
+    <div class="card">
+<div class="card-header">
+<div>
+<h2>Articulaciones</h2>
+<div class="subtitle">Ajuste manual de cada eje. La pinza está limitada entre 95° y 180°.</div>
+</div>
+<span class="pill">7 canales</span>
+</div>
+<div id="joints">
+</div>
+</div>
+    <div class="card">
+<div class="card-header">
+<div>
+<h2>Velocidades y suavidad</h2>
+<div class="subtitle">Control de velocidad global, V1/V2/V3 y aceleración.</div>
+</div>
+</div>
+<div class="row">
+<div class="joint-label">
+<span class="joint-index">VG</span>
+<b>Vel global</b>
+</div>
+<input id="spd" type="range" min="1" max="180" value="60">
+<input id="spdN" type="number" min="1" max="180" value="60">
+</div>
+<div class="grid3">
+<div class="row">
+<div class="joint-label">
+<span class="joint-index">V1</span>
+</div>
+<input id="v1" type="range" min="1" max="180" value="60">
+<input id="v1N" type="number" min="1" max="180" value="60">
+</div>
+<div class="row">
+<div class="joint-label">
+<span class="joint-index">V2</span>
+</div>
+<input id="v2" type="range" min="1" max="180" value="60">
+<input id="v2N" type="number" min="1" max="180" value="60">
+</div>
+<div class="row">
+<div class="joint-label">
+<span class="joint-index">V3</span>
+</div>
+<input id="v3" type="range" min="1" max="180" value="60">
+<input id="v3N" type="number" min="1" max="180" value="60">
+</div>
+</div>
+<div class="row">
+<div class="joint-label">
+<span class="joint-index">A</span>
+<b>Aceleración</b>
+</div>
+<input id="acc" type="range" min="10" max="1200" value="300">
+<input id="accN" type="number" min="10" max="1200" value="300">
+</div>
+</div>
+    <div class="card">
+<div class="card-header">
+<div>
+<h2>Poses guardadas</h2>
+<div class="subtitle">Conserva la reproducción local original y permite usar poses en el editor ESP32.</div>
+</div>
+</div>
+<div class="grid2">
+<div class="surface">
+<select id="poseList" multiple>
+</select>
+<div class="button-row" style="margin-top:10px">
+<button id="btnSave" class="btn-primary" disabled>💾 Guardar pose</button>
+<button id="btnDelete" class="btn-danger">🗑 Borrar</button>
+<button id="btnClear" class="btn-danger">🧹 Limpiar</button>
+</div>
+</div>
+<div class="surface">
+<div class="row">
+<div class="joint-label">
+<span class="joint-index">D</span>
+<b>Delay</b>
+</div>
+<input id="delay" type="range" min="100" max="5000" value="1000">
+<input id="delayN" type="number" min="100" max="5000" value="1000">
+</div>
+<label>
+<input id="loop" type="checkbox"> Repetir poses</label>
+<div class="button-row" style="margin-top:12px">
+<button id="btnPlay" class="btn-play" disabled>▶ Reproducir poses</button>
+<button id="btnExport" class="btn-soft">⬇ Exportar poses</button>
+<button id="btnImport" class="btn-soft">⬆ Importar poses</button>
+</div>
+<textarea id="io" placeholder="JSON de poses">
+</textarea>
+</div>
+</div>
+</div>
+    <div class="card">
+<div class="card-header">
+<div>
+<h2>Configuración de entradas y salidas</h2>
+<div class="subtitle">El ESP32 valida pines y gestiona hasta 16 entradas y 16 salidas. No uses GPIO 1,3,6-11,16,17; 34,35,36,39 son solo entrada.</div>
+</div>
+</div>
+<div class="grid2">
+<div class="surface">
+<h3>Entradas digitales</h3>
+<div class="field-grid">
+<input id="inName" type="text" placeholder="Nombre">
+<input id="inPin" type="number" placeholder="GPIO">
+<select id="inMode">
+<option>INPUT</option>
+<option>INPUT_PULLUP</option>
+</select>
+<select id="inActive">
+<option value="HIGH">Activo HIGH</option>
+<option value="LOW">Activo LOW</option>
+</select>
+</div>
+<div class="button-row" style="margin-top:10px">
+<button id="btnAddIn">➕ Añadir entrada</button>
+<button id="btnClearIn" class="btn-danger">Limpiar entradas</button>
+</div>
+<div id="inputsList">
+</div>
+</div>
+<div class="surface">
+<h3>Salidas digitales</h3>
+<div class="field-grid">
+<input id="outName" type="text" placeholder="Nombre">
+<input id="outPin" type="number" placeholder="GPIO">
+<select id="outInitial">
+<option value="0">Inicial OFF</option>
+<option value="1">Inicial ON</option>
+</select>
+</div>
+<div class="button-row" style="margin-top:10px">
+<button id="btnAddOut">➕ Añadir salida</button>
+<button id="btnClearOut" class="btn-danger">Limpiar salidas</button>
+</div>
+<div id="outputsList">
+</div>
+</div>
+</div>
+</div>
+    <div class="card">
+<div class="card-header">
+<div>
+<h2>Editor de programa</h2>
+<div class="subtitle">Crea pasos que se cargan y ejecutan en el ESP32: pose, salida, espera de entrada, pausa, velocidad y Home.</div>
+</div>
+</div>
+<div class="surface">
+<div class="field-grid">
+<select id="stepType">
+<option value="POSE">Pose</option>
+<option value="OUT">Activar salida</option>
+<option value="WAIT_IN">Esperar entrada</option>
+<option value="PAUSE">Pausa</option>
+<option value="SPEED">Velocidad</option>
+<option value="HOME">Home</option>
+</select>
+<button id="btnAddStep" class="btn-primary">➕ Añadir paso</button>
+<button id="btnClearProg" class="btn-danger">🧹 Limpiar programa</button>
+</div>
+<div class="button-row" style="margin-top:10px">
+<button id="btnValidate" class="btn-soft">✅ Validar</button>
+<button id="btnExportProg" class="btn-soft">⬇ Exportar JSON</button>
+<button id="btnImportProg" class="btn-soft">⬆ Importar JSON</button>
+<button id="btnSendProg" class="btn-primary" disabled>📤 Enviar al ESP32</button>
+<button id="btnRunProg" class="btn-play" disabled>▶ Ejecutar</button>
+<button id="btnStopProg" class="btn-danger" disabled>⏹ Detener</button>
+</div>
+<textarea id="progJson" class="jsonbox" placeholder="JSON del programa">
+</textarea>
+</div>
+<div id="programList" style="margin-top:12px">
+</div>
+</div>
+  </div>
+<aside class="stack">
+<div class="card">
+<div class="card-header">
+<div>
+<h2>Monitor serie</h2>
+<div class="subtitle">Comandos enviados, respuestas ESP32/Arduino, errores y paso actual.</div>
+</div>
+</div>
+<div class="button-row">
+<button id="btnClearLog" class="btn-soft">🧹 Limpiar monitor</button>
+<button id="btnStatus" class="btn-soft" disabled>📋 STATUS</button>
+</div>
+<div id="log" class="log mono">
+</div>
+</div>
+<div class="card">
+<h2>Notas de conexión</h2>
+<div class="hint">⚠️ Arduino UNO usa lógica de 5 V y ESP32 3,3 V. Protege RX del ESP32 con adaptador de nivel o divisor resistivo.</div>
+<div class="hint">🔌 UART entre placas: TX ESP32 GPIO17 → RX Arduino, TX Arduino → RX ESP32 GPIO16, y GND común.</div>
+</div>
+</aside>
+</section>
+</main>
 <script>
-const N = 7;
-const names = ["J1","J2","J3","J4","J5","J6","PINZA"];
-const mins  = [0,0,0,0,0,0,95];
-const maxs  = [180,180,180,180,180,180,180];
-
-let port, reader, writer;
-let readLoopRunning = false;
-
-let poses = [];           // {name, vals:[..7..]}
-let isPlaying = false;
-let playAbort = false;
-
-const st = (t)=> document.getElementById('st').textContent = t;
-const el = (id)=> document.getElementById(id);
-function clamp(v,a,b){ v = parseInt(v||0,10); return Math.min(b, Math.max(a,v)); }
-
-function loadFromStorage(){
-  try{
-    const raw = localStorage.getItem("arm_poses_v2");
-    if(raw){
-      const data = JSON.parse(raw);
-      if(Array.isArray(data)) poses = data;
-    }
-  }catch(e){}
-  renderPoseList();
-}
-function saveToStorage(){
-  localStorage.setItem("arm_poses_v2", JSON.stringify(poses));
-}
-
-function buildJoints(){
-  const box = el("joints");
-  box.innerHTML = "";
-  for(let i=0;i<N;i++){
-    const min = mins[i], max = maxs[i];
-    const init = (i===N-1) ? 120 : 90; // pinza inicia >95
-    const d = document.createElement("div");
-    d.className = "row";
-    d.innerHTML = `
-      <div class="joint-label"><span class="joint-index">${names[i] === "PINZA" ? "P" : names[i]}</span><b>${names[i]}</b></div>
-      <input id="j${i}" type="range" min="${min}" max="${max}" value="${init}">
-      <input id="j${i}n" type="number" min="${min}" max="${max}" value="${init}">
-    `;
-    box.appendChild(d);
-
-    const r = el(`j${i}`);
-    const n = el(`j${i}n`);
-    r.addEventListener("input", ()=>{ n.value = r.value; queueSendPose(); });
-    n.addEventListener("input", ()=>{ r.value = clamp(n.value,min,max); queueSendPose(); });
-  }
-}
-
-function setControlsEnabled(on){
-  el("btnHome").disabled = !on;
-  el("btnQuery").disabled = !on;
-  el("btnSave").disabled = !on;
-  el("btnDelete").disabled = !on;
-  el("btnClear").disabled = !on;
-  el("btnPlay").disabled = !on;
-  el("btnStopPlay").disabled = !on;
-  el("btnExport").disabled = !on;
-  el("btnImport").disabled = !on;
-}
-
-async function connect(){
-  if(!("serial" in navigator)){
-    st("Este navegador no soporta Web Serial (usa Chrome/Edge).");
-    return;
-  }
-  port = await navigator.serial.requestPort();
-  await port.open({ baudRate: 115200 });
-
-  writer = port.writable.getWriter();
-  reader = port.readable.getReader();
-
-  st("Conectado. (El UNO/ESP32 puede resetear al abrir el puerto)");
-  setControlsEnabled(true);
-
-  // espera reset
-  await new Promise(r => setTimeout(r, 1800));
-  startReadLoop();
-  await sendLine("<Q>");
-}
-
-async function sendLine(s){
-  if(!writer) return;
-  await writer.write(new TextEncoder().encode(s + "\n"));
-}
-
-function startReadLoop(){
-  if(readLoopRunning) return;
-  readLoopRunning = true;
-
-  const dec = new TextDecoder();
-  let buf = "";
-
-  (async ()=>{
-    while(true){
-      const { value, done } = await reader.read();
-      if(done) break;
-
-      buf += dec.decode(value, {stream:true});
-      let idx;
-      while((idx = buf.indexOf("\n")) >= 0){
-        const line = buf.slice(0, idx).trim();
-        buf = buf.slice(idx+1);
-        if(line) handleLine(line);
-      }
-    }
-  })().catch(()=>{ st("Lectura detenida."); });
-}
-
-function handleLine(line){
-  st("RX: " + line);
-
-  const frames = line.match(/<[^>]*>/g) || [];
-  for(const f of frames){
-    const inner = f.slice(1,-1);
-    const parts = inner.split(",");
-    const cmd = parts[0];
-
-    if(cmd === "T" && parts.length === 1+N){
-      for(let i=0;i<N;i++){
-        const v = clamp(parts[i+1], mins[i], maxs[i]);
-        el(`j${i}`).value = v;
-        el(`j${i}n`).value = v;
-      }
-    }
-    if(cmd === "S" && parts.length === 2){
-      const v = clamp(parts[1],1,180);
-      el("spd").value = v; el("spdN").value = v;
-    }
-    if(cmd === "V" && parts.length === 4){
-      const a = clamp(parts[1],1,180);
-      const b = clamp(parts[2],1,180);
-      const c = clamp(parts[3],1,180);
-      el("v1").value = a; el("v1N").value = a;
-      el("v2").value = b; el("v2N").value = b;
-      el("v3").value = c; el("v3N").value = c;
-    }
-    if(cmd === "A" && parts.length === 2){
-      const v = clamp(parts[1],10,1200);
-      el("acc").value = v; el("accN").value = v;
-    }
-  }
-}
-
-// --- Throttle envíos ---
-let poseTimer=null, spdTimer=null, vTimer=null, accTimer=null;
-
-function queueSendPose(){
-  if(!writer || isPlaying) return;
-  clearTimeout(poseTimer);
-  poseTimer = setTimeout(sendPose, 40);
-}
-function queueSendSpeed(){
-  if(!writer) return;
-  clearTimeout(spdTimer);
-  spdTimer = setTimeout(sendSpeed, 120);
-}
-function queueSendV(){
-  if(!writer) return;
-  clearTimeout(vTimer);
-  vTimer = setTimeout(sendV, 120);
-}
-function queueSendAccel(){
-  if(!writer) return;
-  clearTimeout(accTimer);
-  accTimer = setTimeout(sendAccel, 120);
-}
-
-async function sendPose(valsOverride=null){
-  const vals = valsOverride ?? Array.from({length:N}, (_,i)=> clamp(el(`j${i}`).value, mins[i], maxs[i]));
-  await sendLine(`<P,${vals.join(",")}>`);
-}
-async function sendSpeed(){
-  await sendLine(`<S,${clamp(el("spd").value,1,180)}>`); // global
-}
-async function sendV(){
-  const a = clamp(el("v1").value,1,180);
-  const b = clamp(el("v2").value,1,180);
-  const c = clamp(el("v3").value,1,180);
-  await sendLine(`<V,${a},${b},${c}>`);
-}
-async function sendAccel(){
-  await sendLine(`<A,${clamp(el("acc").value,10,1200)}>`); // acc
-}
-
-// --- UI listeners ---
-function hookControls(){
-  // Vel global
-  el("spd").addEventListener("input", ()=>{ el("spdN").value = el("spd").value; queueSendSpeed(); });
-  el("spdN").addEventListener("input", ()=>{ el("spd").value = clamp(el("spdN").value,1,180); queueSendSpeed(); });
-
-  // V1-V3
-  el("v1").addEventListener("input", ()=>{ el("v1N").value = el("v1").value; queueSendV(); });
-  el("v1N").addEventListener("input", ()=>{ el("v1").value = clamp(el("v1N").value,1,180); queueSendV(); });
-
-  el("v2").addEventListener("input", ()=>{ el("v2N").value = el("v2").value; queueSendV(); });
-  el("v2N").addEventListener("input", ()=>{ el("v2").value = clamp(el("v2N").value,1,180); queueSendV(); });
-
-  el("v3").addEventListener("input", ()=>{ el("v3N").value = el("v3").value; queueSendV(); });
-  el("v3N").addEventListener("input", ()=>{ el("v3").value = clamp(el("v3N").value,1,180); queueSendV(); });
-
-  // Acc
-  el("acc").addEventListener("input", ()=>{ el("accN").value = el("acc").value; queueSendAccel(); });
-  el("accN").addEventListener("input", ()=>{ el("acc").value = clamp(el("accN").value,10,1200); queueSendAccel(); });
-
-  // Delay
-  el("delay").addEventListener("input", ()=>{ el("delayN").value = el("delay").value; });
-  el("delayN").addEventListener("input", ()=>{ el("delay").value = clamp(el("delayN").value,100,5000); });
-}
-
-// --- Poses ---
-function currentVals(){
-  return Array.from({length:N}, (_,i)=> clamp(el(`j${i}`).value, mins[i], maxs[i]));
-}
-function renderPoseList(){
-  const list = el("poseList");
-  list.innerHTML = "";
-  poses.forEach((p, idx)=>{
-    const opt = document.createElement("option");
-    opt.value = String(idx);
-    opt.textContent = `${idx+1}. ${p.name}  [${p.vals.join(", ")}]`;
-    list.appendChild(opt);
-  });
-}
-function savePose(){
-  poses.push({ name: `Pose ${poses.length+1}`, vals: currentVals() });
-  saveToStorage();
-  renderPoseList();
-}
-function deleteSelectedPose(){
-  const idx = el("poseList").selectedIndex;
-  if(idx < 0) return;
-  poses.splice(idx, 1);
-  saveToStorage();
-  renderPoseList();
-}
-function clearPoses(){
-  poses = [];
-  saveToStorage();
-  renderPoseList();
-}
-
-function delayMs(ms){ return new Promise(r => setTimeout(r, ms)); }
-
-async function playPoses(){
-  if(!writer) return;
-  if(poses.length === 0){ st("No hay poses guardadas."); return; }
-  if(isPlaying) return;
-
-  isPlaying = true;
-  playAbort = false;
-  el("btnPlay").disabled = true;
-
-  // Aplica settings antes de arrancar
-  await sendSpeed();
-  await sendV();
-  await sendAccel();
-
-  const loop = el("loop").checked;
-  const stepDelay = clamp(el("delay").value, 100, 5000);
-
-  try{
-    do{
-      for(let i=0;i<poses.length;i++){
-        if(playAbort) break;
-        const vals = poses[i].vals.map((v, j)=> clamp(v, mins[j], maxs[j]));
-        await sendPose(vals);
-        await delayMs(stepDelay);
-      }
-      if(playAbort) break;
-    }while(loop);
-  }finally{
-    isPlaying = false;
-    playAbort = false;
-    el("btnPlay").disabled = false;
-  }
-}
-
-function stopPlay(){
-  playAbort = true;
-  st("Reproducción parada.");
-}
-
-// --- IO export/import ---
-function exportPoses(){
-  el("io").value = JSON.stringify(poses, null, 2);
-}
-function importPoses(){
-  try{
-    const data = JSON.parse(el("io").value);
-    if(!Array.isArray(data)){ st("Import: JSON inválido (no es array)."); return; }
-    // validación mínima
-    const cleaned = [];
-    for(const p of data){
-      if(!p || !Array.isArray(p.vals) || p.vals.length !== N) continue;
-      cleaned.push({
-        name: String(p.name || `Pose ${cleaned.length+1}`),
-        vals: p.vals.map((v,i)=> clamp(v, mins[i], maxs[i]))
-      });
-    }
-    poses = cleaned;
-    saveToStorage();
-    renderPoseList();
-    st("Import OK.");
-  }catch(e){
-    st("Import: JSON inválido.");
-  }
-}
-
-// --- Botones principales ---
-el("btnConn").addEventListener("click", ()=>connect().catch(e=>st("Error: " + e)));
-el("btnHome").addEventListener("click", ()=>sendLine("<H>").catch(()=>{}));
-el("btnQuery").addEventListener("click", ()=>sendLine("<Q>").catch(()=>{}));
-
-el("btnSave").addEventListener("click", savePose);
-el("btnDelete").addEventListener("click", deleteSelectedPose);
-el("btnClear").addEventListener("click", clearPoses);
-el("btnPlay").addEventListener("click", playPoses);
-el("btnStopPlay").addEventListener("click", stopPlay);
-
-el("btnExport").addEventListener("click", exportPoses);
-el("btnImport").addEventListener("click", importPoses);
-
-el("poseList").addEventListener("change", ()=>{
-  const idx = el("poseList").selectedIndex;
-  if(idx >= 0 && poses[idx]){
-    const vals = poses[idx].vals;
-    for(let i=0;i<N;i++){
-      const v = clamp(vals[i], mins[i], maxs[i]);
-      el(`j${i}`).value = v;
-      el(`j${i}n`).value = v;
-    }
-  }
-});
-
-// Init
-buildJoints();
-hookControls();
-loadFromStorage();
-setControlsEnabled(false);
+const N=7,names=["J1","J2","J3","J4","J5","J6","PINZA"],mins=[0,0,0,0,0,0,95],maxs=[180,180,180,180,180,180,180],home=[90,90,90,90,90,90,120];
+const el=id=>document.getElementById(id); const clamp=(v,min,max)=>Math.max(min,Math.min(max,parseInt(v||0,10))); const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+let port,writer,reader,rx="",poses=[],inputs=[],outputs=[],program=[],isPlaying=false,playAbort=false;
+const storageKey="tfg_robotica_v2";
+function log(line,cls="rx"){const d=document.createElement("div");d.className=cls;d.textContent=new Date().toLocaleTimeString()+"  "+line;el("log").appendChild(d);el("log").scrollTop=el("log").scrollHeight;}
+function st(t){el("st").textContent=t;} function saveToStorage(){localStorage.setItem(storageKey,JSON.stringify({poses,inputs,outputs,program}));}
+function loadFromStorage(){try{const d=JSON.parse(localStorage.getItem(storageKey)||"{}");poses=Array.isArray(d.poses)?d.poses:[];inputs=Array.isArray(d.inputs)?d.inputs:[];outputs=Array.isArray(d.outputs)?d.outputs:[];program=Array.isArray(d.program)?d.program:[];}catch{poses=[];inputs=[];outputs=[];program=[];}renderAll();}
+function setControlsEnabled(v){["btnHome","btnQuery","btnSave","btnPlay","btnStopPlay","btnPing","btnStatus","btnSendProg","btnRunProg","btnStopProg"].forEach(id=>el(id).disabled=!v);}
+async function connect(){if(!("serial" in navigator)){st("WebSerial no disponible. Usa Chrome/Edge con HTTPS o localhost.");return;}port=await navigator.serial.requestPort();await port.open({baudRate:115200});writer=port.writable.getWriter();setControlsEnabled(true);st("Conectado al ESP32 a 115200.");log("Puerto abierto","run");readLoop();await sendLine("<PING>");}
+async function readLoop(){const dec=new TextDecoderStream();port.readable.pipeTo(dec.writable).catch(()=>{});reader=dec.readable.getReader();try{while(true){const {value,done}=await reader.read();if(done)break;if(value)handleText(value);}}catch(e){log("Lectura cerrada: "+e,"err");}}
+function handleText(t){for(const c of t){if(c==='\r'||c==='\n')continue;if(c==='<')rx="";rx+=c;if(c==='>'){handleFrame(rx);rx="";}}}
+function handleFrame(f){let cls=f.includes("<ERR")||f.includes("ERROR")?"err":f.includes("RUN,")?"run":"rx";log(f,cls);if(f.startsWith("<T,")){const vals=f.slice(3,-1).split(',').map(Number);if(vals.length===N)vals.forEach((v,i)=>{el(`j${i}`).value=v;el(`j${i}n`).value=v;});}if(f.startsWith("<S,")){el("spd").value=el("spdN").value=clamp(f.slice(3,-1),1,180);}if(f.startsWith("<V,")){const v=f.slice(3,-1).split(',');["v1","v2","v3"].forEach((id,i)=>{el(id).value=el(id+"N").value=clamp(v[i],1,180);});}if(f.startsWith("<A,")){el("acc").value=el("accN").value=clamp(f.slice(3,-1),10,1200);}if(f.startsWith("<RUN,STEP"))st("Ejecutando "+f);if(f==="<RUN,DONE>"||f==="<RUN,STOPPED>")st(f);}
+async function sendLine(line){if(!writer){st("No conectado.");return;}await writer.write(new TextEncoder().encode(line+"\n"));log(line,"tx");}
+function buildJoints(){const root=el("joints");root.innerHTML="";names.forEach((n,i)=>{const r=document.createElement("div");r.className="row";r.innerHTML=`<div class="joint-label">
+<span class="joint-index">${n}</span>
+<b>${i===6?'Pinza':'Articulación'}</b>
+</div>
+<input id="j${i}" type="range" min="${mins[i]}" max="${maxs[i]}" value="${home[i]}">
+<input id="j${i}n" type="number" min="${mins[i]}" max="${maxs[i]}" value="${home[i]}">`;root.appendChild(r);el(`j${i}`).addEventListener("input",()=>{el(`j${i}n`).value=el(`j${i}`).value;queueSendPose();});el(`j${i}n`).addEventListener("input",()=>{el(`j${i}`).value=clamp(el(`j${i}n`).value,mins[i],maxs[i]);queueSendPose();});});}
+let poseTimer,spdTimer,vTimer,accTimer;function queueSendPose(){if(!writer||isPlaying)return;clearTimeout(poseTimer);poseTimer=setTimeout(()=>sendPose(),40);}function queueSendSpeed(){if(!writer)return;clearTimeout(spdTimer);spdTimer=setTimeout(sendSpeed,120);}function queueSendV(){if(!writer)return;clearTimeout(vTimer);vTimer=setTimeout(sendV,120);}function queueSendAccel(){if(!writer)return;clearTimeout(accTimer);accTimer=setTimeout(sendAccel,120);}function currentVals(){return Array.from({length:N},(_,i)=>clamp(el(`j${i}`).value,mins[i],maxs[i]));}async function sendPose(vals=currentVals()){await sendLine(`<P,${vals.join(",")}>`);}async function sendSpeed(){await sendLine(`<S,${clamp(el("spd").value,1,180)}>`);}async function sendV(){await sendLine(`<V,${clamp(el("v1").value,1,180)},${clamp(el("v2").value,1,180)},${clamp(el("v3").value,1,180)}>`);}async function sendAccel(){await sendLine(`<A,${clamp(el("acc").value,10,1200)}>`);}
+function hookRanges(){[["spd","spdN",1,180,queueSendSpeed],["v1","v1N",1,180,queueSendV],["v2","v2N",1,180,queueSendV],["v3","v3N",1,180,queueSendV],["acc","accN",10,1200,queueSendAccel],["delay","delayN",100,5000,()=>{}]].forEach(([a,b,min,max,cb])=>{el(a).addEventListener("input",()=>{el(b).value=el(a).value;cb();});el(b).addEventListener("input",()=>{el(a).value=clamp(el(b).value,min,max);cb();});});}
+function renderPoseList(){el("poseList").innerHTML=poses.map((p,i)=>`<option value="${i}">${i+1}. ${esc(p.name)} [${p.vals.join(', ')}]</option>`).join("");}
+function renderIO(){el("inputsList").innerHTML=inputs.map((x,i)=>`<div class="io-card">
+<b>${esc(x.name)} · GPIO ${x.pin}</b>
+<span class="small">${x.mode}, activo ${x.activeState}</span>
+<div class="button-row">
+<button onclick="readInput(${i})">Leer</button>
+<button class="btn-danger" onclick="removeInput(${i})">Eliminar</button>
+</div>
+</div>`).join("");el("outputsList").innerHTML=outputs.map((x,i)=>`<div class="io-card">
+<b>${esc(x.name)} · GPIO ${x.pin}</b>
+<span class="small">Estado inicial ${x.initialState?'ON':'OFF'} · actual ${x.value?'ON':'OFF'}</span>
+<div class="button-row">
+<button onclick="setOutput(${i},1)">ON</button>
+<button onclick="setOutput(${i},0)">OFF</button>
+<button class="btn-danger" onclick="removeOutput(${i})">Eliminar</button>
+</div>
+</div>`).join("");}
+function renderSelectors(){return {inOpts:inputs.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join(""),outOpts:outputs.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join(""),poseOpts:poses.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")};}
+function renderProgram(){const {inOpts,outOpts,poseOpts}=renderSelectors();el("programList").innerHTML=program.map((s,i)=>`<div class="step-card">
+<div class="step-tools">
+<b>#${i+1} ${s.type}</b>
+<button onclick="moveStep(${i},-1)">↑</button>
+<button onclick="moveStep(${i},1)">↓</button>
+<button onclick="dupStep(${i})">Duplicar</button>
+<button class="btn-danger" onclick="delStep(${i})">Borrar</button>
+</div>${stepEditor(s,i,inOpts,outOpts,poseOpts)}</div>`).join("");}
+function stepEditor(s,i,inOpts,outOpts,poseOpts){if(s.type==="POSE")return `<div class="field-grid">
+<select onchange="applyPoseRef(${i},this.value)">
+<option value="">Usar valores editados</option>${poseOpts}</select>${names.map((n,j)=>`<input type="number" min="${mins[j]}" max="${maxs[j]}" value="${s.vals[j]}" onchange="program[${i}].vals[${j}]=clamp(this.value,${mins[j]},${maxs[j]});saveToStorage()" title="${n}">`).join("")}<input type="number" value="${s.delayMs||0}" onchange="program[${i}].delayMs=clamp(this.value,0,600000);saveToStorage()" title="Delay ms">
+</div>`;if(s.type==="OUT")return `<div class="field-grid">
+<select onchange="program[${i}].id=this.value;saveToStorage()">${outOpts}</select>
+<select onchange="program[${i}].value=Number(this.value);saveToStorage()">
+<option value="1" ${s.value?'selected':''}>ON</option>
+<option value="0" ${!s.value?'selected':''}>OFF</option>
+</select>
+</div>`;if(s.type==="WAIT_IN")return `<div class="field-grid">
+<select onchange="program[${i}].id=this.value;saveToStorage()">${inOpts}</select>
+<select onchange="program[${i}].state=this.value;saveToStorage()">
+<option value="ACTIVE" ${s.state==='ACTIVE'?'selected':''}>Activa</option>
+<option value="INACTIVE" ${s.state==='INACTIVE'?'selected':''}>Inactiva</option>
+</select>
+<input type="number" value="${s.timeoutMs||5000}" onchange="program[${i}].timeoutMs=clamp(this.value,0,600000);saveToStorage()" title="Timeout ms">
+</div>`;if(s.type==="PAUSE")return `<input type="number" value="${s.durationMs||1000}" onchange="program[${i}].durationMs=clamp(this.value,0,600000);saveToStorage()" title="Duración ms">`;if(s.type==="SPEED")return `<div class="field-grid">${['s','v1','v2','v3'].map(k=>`<input type="number" value="${s[k]||60}" onchange="program[${i}].${k}=clamp(this.value,1,180);saveToStorage()" title="${k}">`).join('')}<input type="number" value="${s.a||300}" onchange="program[${i}].a=clamp(this.value,10,1200);saveToStorage()" title="Aceleración">
+</div>`;return `<span class="small">Envia &lt;H&gt; al Arduino a través del ESP32.</span>`;}
+function renderAll(){renderPoseList();renderIO();renderProgram();}
+function safeId(prefix){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function addInput(){const pin=Number(el("inPin").value),name=el("inName").value.trim()||`Entrada ${inputs.length+1}`;inputs.push({id:safeId("in"),name,pin,mode:el("inMode").value,activeState:el("inActive").value});saveToStorage();renderAll();sendIoConfig();}
+function addOutput(){const pin=Number(el("outPin").value),name=el("outName").value.trim()||`Salida ${outputs.length+1}`,initialState:Number(el("outInitial").value);outputs.push({id:safeId("out"),name,pin,initialState,value:initialState});saveToStorage();renderAll();sendIoConfig();}
+async function sendIoConfig(){if(!writer)return;await sendLine("<IN,CLEAR>");for(const x of inputs)await sendLine(`<IN,ADD,${x.id},${x.pin},${x.mode},${x.activeState}>`);await sendLine("<OUT,CLEAR>");for(const x of outputs)await sendLine(`<OUT,ADD,${x.id},${x.pin},${x.initialState?1:0}>`);}function readInput(i){sendLine(`<IN,READ,${inputs[i].id}>`);}function removeInput(i){const id=inputs[i].id;inputs.splice(i,1);saveToStorage();renderAll();sendLine(`<IN,REMOVE,${id}>`);}function setOutput(i,v){outputs[i].value=v;saveToStorage();renderAll();sendLine(`<OUT,SET,${outputs[i].id},${v}>`);}function removeOutput(i){const id=outputs[i].id;outputs.splice(i,1);saveToStorage();renderAll();sendLine(`<OUT,REMOVE,${id}>`);}
+function addStep(){const t=el("stepType").value;let s={type:t};if(t==="POSE")s={type:t,source:"current",vals:currentVals(),delayMs:0};if(t==="OUT")s={type:t,id:outputs[0]?.id||"",value:1};if(t==="WAIT_IN")s={type:t,id:inputs[0]?.id||"",state:"ACTIVE",timeoutMs:5000};if(t==="PAUSE")s={type:t,durationMs:1000};if(t==="SPEED")s={type:t,s:clamp(el("spd").value,1,180),v1:clamp(el("v1").value,1,180),v2:clamp(el("v2").value,1,180),v3:clamp(el("v3").value,1,180),a:clamp(el("acc").value,10,1200)};program.push(s);saveToStorage();renderProgram();}
+function delStep(i){program.splice(i,1);saveToStorage();renderProgram();}function dupStep(i){program.splice(i+1,0,JSON.parse(JSON.stringify(program[i])));saveToStorage();renderProgram();}function moveStep(i,d){const j=i+d;if(j<0||j>=program.length)return;[program[i],program[j]]=[program[j],program[i]];saveToStorage();renderProgram();}function applyPoseRef(i,v){if(v!==""){program[i].source="saved";program[i].poseIndex=Number(v);program[i].vals=[...poses[v].vals];saveToStorage();renderProgram();}}
+function validateProgram(show=true){const errs=[];program.forEach((s,i)=>{if(s.type==="POSE"&&(!Array.isArray(s.vals)||s.vals.length!==N))errs.push(`#${i+1} pose inválida`);if(s.type==="OUT"&&!outputs.some(o=>o.id===s.id))errs.push(`#${i+1} salida no configurada`);if(s.type==="WAIT_IN"&&!inputs.some(x=>x.id===s.id))errs.push(`#${i+1} entrada no configurada`);});if(show)st(errs.length?"Errores: "+errs.join("; "):"Programa válido.");return errs;}
+async function sendProgram(){if(validateProgram(false).length){st("Corrige errores antes de enviar.");return;}await sendIoConfig();await sendLine("<PROG,CLEAR>");for(const s of program){if(s.type==="POSE")await sendLine(`<PROG,ADD,POSE,${s.vals.map((v,i)=>clamp(v,mins[i],maxs[i])).join(',')},${clamp(s.delayMs||0,0,600000)}>`);if(s.type==="OUT")await sendLine(`<PROG,ADD,OUT,${s.id},${s.value?1:0}>`);if(s.type==="WAIT_IN")await sendLine(`<PROG,ADD,WAIT_IN,${s.id},${s.state},${clamp(s.timeoutMs||0,0,600000)}>`);if(s.type==="PAUSE")await sendLine(`<PROG,ADD,PAUSE,${clamp(s.durationMs||0,0,600000)}>`);if(s.type==="SPEED")await sendLine(`<PROG,ADD,SPEED,${clamp(s.s,1,180)},${clamp(s.v1,1,180)},${clamp(s.v2,1,180)},${clamp(s.v3,1,180)},${clamp(s.a,10,1200)}>`);if(s.type==="HOME")await sendLine("<PROG,ADD,HOME>");}st("Programa enviado al ESP32.");}
+function exportProgram(){el("progJson").value=JSON.stringify({inputs,outputs,program},null,2);}function importProgram(){try{const d=JSON.parse(el("progJson").value);if(Array.isArray(d.inputs))inputs=d.inputs;if(Array.isArray(d.outputs))outputs=d.outputs;if(Array.isArray(d.program))program=d.program;saveToStorage();renderAll();st("Programa JSON importado.");}catch{st("JSON inválido.");}}
+function savePose(){poses.push({name:`Pose ${poses.length+1}`,vals:currentVals()});saveToStorage();renderAll();}function deleteSelectedPose(){const i=el("poseList").selectedIndex;if(i>=0){poses.splice(i,1);saveToStorage();renderAll();}}function clearPoses(){poses=[];saveToStorage();renderAll();}function exportPoses(){el("io").value=JSON.stringify(poses,null,2);}function importPoses(){try{const d=JSON.parse(el("io").value);if(!Array.isArray(d))throw 0;poses=d.filter(p=>Array.isArray(p.vals)&&p.vals.length===N).map((p,i)=>({name:String(p.name||`Pose ${i+1}`),vals:p.vals.map((v,j)=>clamp(v,mins[j],maxs[j]))}));saveToStorage();renderAll();}catch{st("Import: JSON inválido.");}}
+const delayMs=ms=>new Promise(r=>setTimeout(r,ms));async function playPoses(){if(!writer||!poses.length)return;isPlaying=true;playAbort=false;el("btnPlay").disabled=true;await sendSpeed();await sendV();await sendAccel();do{for(const p of poses){if(playAbort)break;await sendPose(p.vals);await delayMs(clamp(el("delay").value,100,5000));}}while(el("loop").checked&&!playAbort);isPlaying=false;playAbort=false;el("btnPlay").disabled=false;}function stopPlay(){playAbort=true;st("Reproducción local parada.");}
+el("btnConn").onclick=()=>connect().catch(e=>st("Error: "+e));el("btnPing").onclick=()=>sendLine("<PING>");el("btnStatus").onclick=()=>sendLine("<STATUS>");el("btnHome").onclick=()=>sendLine("<H>");el("btnQuery").onclick=()=>sendLine("<Q>");el("btnSave").onclick=savePose;el("btnDelete").onclick=deleteSelectedPose;el("btnClear").onclick=clearPoses;el("btnPlay").onclick=playPoses;el("btnStopPlay").onclick=stopPlay;el("btnExport").onclick=exportPoses;el("btnImport").onclick=importPoses;el("poseList").onchange=()=>{const i=el("poseList").selectedIndex;if(i>=0)poses[i].vals.forEach((v,j)=>{el(`j${j}`).value=el(`j${j}n`).value=v;});};el("btnAddIn").onclick=addInput;el("btnAddOut").onclick=addOutput;el("btnClearIn").onclick=()=>{inputs=[];saveToStorage();renderAll();sendLine("<IN,CLEAR>");};el("btnClearOut").onclick=()=>{outputs=[];saveToStorage();renderAll();sendLine("<OUT,CLEAR>");};el("btnAddStep").onclick=addStep;el("btnClearProg").onclick=()=>{program=[];saveToStorage();renderProgram();};el("btnValidate").onclick=()=>validateProgram();el("btnExportProg").onclick=exportProgram;el("btnImportProg").onclick=importProgram;el("btnSendProg").onclick=sendProgram;el("btnRunProg").onclick=()=>sendLine("<PROG,RUN>");el("btnStopProg").onclick=()=>sendLine("<PROG,STOP>");el("btnClearLog").onclick=()=>el("log").innerHTML="";
+buildJoints();hookRanges();loadFromStorage();setControlsEnabled(false);
 </script>
 </body>
 </html>

@@ -1,59 +1,26 @@
 # Plan de desarrollo
 
-## Fase 1: ordenar repositorio
+## Fase completada: ESP32 como controlador principal
 
-- Mover la interfaz real a `web/index.html`.
-- Crear estructura `docs/`, `arduino/`, `esp32/` y `examples/`.
-- Documentar arquitectura, protocolo y plan de evolución.
+- Interfaz web ampliada para conectarse al ESP32 por WebSerial.
+- Configuración persistente en `localStorage` de poses, entradas, salidas y programa.
+- Editor de programa con pasos de tipo pose, salida, espera de entrada, pausa, velocidad y Home.
+- Firmware ESP32 con `Serial` USB y `Serial2` hacia Arduino.
+- Gestión de hasta 16 entradas digitales, 16 salidas digitales y 100 pasos.
+- Máquina de estados con `millis()` para no bloquear completamente la ejecución.
+- Arduino Uno mantenido como motion control del brazo.
 
-## Fase 2: firmware Arduino compatible con interfaz
+## Próximas fases propuestas
 
-- Implementar firmware Arduino Uno con `Servo.h`.
-- Controlar los 7 canales en los pines reales `{2,4,11,6,8,10,5}`.
-- Aplicar límites `0°..180°` en `J1..J6` y `95°..180°` en `PINZA`.
-- Interpretar comandos `<P>`, `<S>`, `<V>`, `<A>`, `<Q>` y `<H>`.
-- Responder con tramas compatibles con la interfaz.
-- Implementar Home y movimiento progresivo simple.
+1. Confirmación de movimiento real: esperar `<OK,...>` o comprobar `<T,...>` antes de avanzar pasos críticos.
+2. Guardado persistente en ESP32 mediante NVS/Preferences para entradas, salidas y programas.
+3. Pantalla de diagnóstico de pines y cableado.
+4. Modo simulación visual de la secuencia antes de enviarla a hardware.
+5. Interlocks de seguridad: seta de emergencia, puerta, límites externos y rearme.
+6. Calibración fina de home y límites mecánicos reales por eje.
 
-## Fase 3: ESP32 como puente serie
+## Criterios de seguridad
 
-- Comunicar PC/interfaz con ESP32 por USB a `115200` baudios.
-- Comunicar ESP32 con Arduino Uno por `Serial2` a `115200` baudios.
-- Reenviar comandos de movimiento al Arduino.
-- Reenviar respuestas del Arduino al PC.
-- Añadir mensajes de depuración claros.
-
-## Fase 4: salidas digitales desde ESP32
-
-- Añadir abstracción de salidas digitales.
-- Preparar comandos futuros para activar/desactivar actuadores.
-- Mantener el Arduino aislado de esta lógica.
-- No mover todavía la cinta transportadora hasta validar cableado y seguridad.
-
-## Fase 5: entradas digitales desde ESP32
-
-- Añadir lectura de sensores de detección.
-- Crear estados de entrada claros.
-- Preparar esperas condicionadas por sensores.
-- Documentar polaridad, antirrebote y seguridad.
-
-## Fase 6: editor visual de programa
-
-- Ampliar la interfaz HTML con bloques de programa.
-- Permitir pasos de pose, salida digital, espera de entrada y pausa.
-- Mantener importación/exportación JSON.
-- Evitar frameworks para conservar simplicidad y portabilidad.
-
-## Fase 7: ejecución de secuencias completas desde ESP32
-
-- Transferir programas desde la interfaz al ESP32.
-- Ejecutar secuencias de célula en el ESP32.
-- Gestionar pausa, parada, errores y estados.
-- Enviar al Arduino únicamente órdenes de motion control.
-
-## Fase 8: integración con cinta transportadora y sensores
-
-- Integrar cinta transportadora como actuador controlado por ESP32.
-- Integrar sensores de presencia o posición.
-- Validar ciclo pick and place completo.
-- Documentar pruebas, riesgos y mejoras para el TFG.
+- No conectar señales de 5 V del Arduino directamente a entradas del ESP32 sin adaptación de nivel.
+- Verificar sentido de giro y límites antes de ejecutar secuencias automáticas.
+- Probar primero con servos sin carga y velocidades bajas.
