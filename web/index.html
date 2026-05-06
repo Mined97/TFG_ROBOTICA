@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Brazo 7 ejes + Pinza - WebSerial</title>
+  <title>Brazo 6 ejes + Pinza - WebSerial</title>
   <style>
     :root{
       color-scheme: light;
@@ -390,8 +390,8 @@
   <main class="app">
     <section class="hero">
       <div>
-        <div class="eyebrow">⚙️ Panel WebSerial · Arduino UNO</div>
-        <h1>Brazo robótico de 7 ejes + pinza</h1>
+        <div class="eyebrow">⚙️ Panel WebSerial · Arduino UNO / ESP32 puente</div>
+        <h1>Brazo robótico de 6 ejes + pinza</h1>
         <p>Interfaz de control para mover articulaciones, ajustar velocidades, guardar poses y reproducir secuencias desde el navegador.</p>
       </div>
       <aside class="hero-panel" aria-label="Resumen del sistema">
@@ -407,7 +407,7 @@
           <div class="card-header">
             <div>
               <h2>Control principal</h2>
-              <div class="subtitle">Conecta el Arduino, lee el estado o manda el brazo a Home.</div>
+              <div class="subtitle">Conecta el Arduino directo o el ESP32 en modo puente, lee el estado o manda el brazo a Home.</div>
             </div>
             <span class="pill">115200 baud</span>
           </div>
@@ -619,7 +619,7 @@ async function connect(){
   writer = port.writable.getWriter();
   reader = port.readable.getReader();
 
-  st("Conectado. (El UNO suele resetear al abrir el puerto)");
+  st("Conectado. (El UNO/ESP32 puede resetear al abrir el puerto)");
   setControlsEnabled(true);
 
   // espera reset
