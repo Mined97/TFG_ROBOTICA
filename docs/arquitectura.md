@@ -1,62 +1,31 @@
 # Arquitectura del sistema
 
-## Arquitectura actual: PC -> Arduino
+La célula se organiza en cuatro niveles conectados por serie:
 
 ```text
-PC / navegador web -> WebSerial USB -> Arduino Uno -> servos del brazo
+PC / navegador web -> WebSerial USB -> ESP32 -> Serial2/UART -> Arduino Uno -> servos del brazo
 ```
 
-La interfaz `web/index.html` se comunica por WebSerial a `115200` baudios con el Arduino Uno. El Arduino interpreta comandos de movimiento y controla los 7 canales del brazo: `J1`, `J2`, `J3`, `J4`, `J5`, `J6` y `PINZA`.
+## Reparto de responsabilidades
 
-Este modo permite probar de forma directa:
+- **Interfaz web (`web/index.html`)**: interfaz visual en HTML, CSS y JavaScript puro. Permite mover el brazo, guardar poses, configurar entradas/salidas, editar programas, enviarlos al ESP32 y monitorizar el bus serie.
+- **ESP32 (`esp32/esp32_controller/esp32_controller.ino`)**: controlador principal de la célula. Atiende WebSerial por USB, gestiona hasta 16 entradas, hasta 16 salidas y hasta 100 pasos de programa. Reenvía al Arduino únicamente comandos de movimiento.
+- **Arduino Uno (`arduino/brazo_motion_control/brazo_motion_control.ino`)**: controlador de movimiento. Mantiene `Servo.h`, los pines `{2,4,11,6,8,10,5}`, los límites de articulaciones y el protocolo del brazo.
 
-- Sliders de articulaciones.
-- Velocidad global.
-- Velocidades independientes de `J1`, `J2` y `J3`.
-- Aceleración configurada.
-- Home.
-- Consulta de estado.
-- Guardado, borrado, exportación, importación y reproducción de poses desde la interfaz.
+## Comunicación
 
-## Arquitectura futura: PC -> ESP32 -> Arduino
+- PC a ESP32: `Serial` USB a **115200 baudios**.
+- ESP32 a Arduino: `Serial2` a **115200 baudios**, con **RX2 GPIO16** y **TX2 GPIO17**.
+- No se usa WiFi ni Bluetooth.
 
-```text
-PC / navegador web -> WebSerial USB -> ESP32 -> UART/Serial -> Arduino Uno -> servos del brazo
-```
+## Cableado serie recomendado
 
-En la arquitectura futura, la interfaz se conecta al ESP32 por USB. El ESP32 reenvía los comandos de movimiento al Arduino Uno mediante UART y recibe sus respuestas.
+- ESP32 GPIO17 / TX2 -> RX del Arduino Uno.
+- TX del Arduino Uno -> ESP32 GPIO16 / RX2.
+- GND común entre ESP32 y Arduino.
 
-## Función de cada parte
+> Advertencia: el Arduino Uno trabaja normalmente a 5 V y el ESP32 a 3,3 V. La señal TX del Arduino hacia RX del ESP32 debe adaptarse con divisor resistivo o conversor de nivel lógico.
 
-### Interfaz HTML
+## Control de entradas y salidas
 
-- Es la interfaz visual del usuario.
-- Permite mover articulaciones y pinza.
-- Permite modificar velocidades y aceleración.
-- Permite guardar, borrar, reproducir, exportar e importar poses.
-- En fases futuras podrá editar programas de célula completos.
-
-### ESP32
-
-- Será el controlador principal de la célula.
-- Gestionará entradas digitales, salidas digitales, esperas, pausas y secuencias.
-- En esta primera versión solo funciona como puente serie compatible con la interfaz actual.
-- No implementa todavía WiFi, Bluetooth, control real de cinta ni entradas/salidas reales.
-
-### Arduino Uno
-
-- Se dedica exclusivamente al motion control del brazo robótico.
-- Recibe órdenes de movimiento.
-- Controla los servos en los pines reales `{2,4,11,6,8,10,5}`.
-- Aplica límites de seguridad, incluyendo la pinza entre `95°` y `180°`.
-- No debe gestionar sensores, cinta transportadora, actuadores externos ni lógica de proceso.
-
-## Motivo de separar control de proceso y motion control
-
-La separación mejora la claridad didáctica y técnica del sistema:
-
-- El Arduino Uno mantiene una tarea concreta y repetitiva: mover servos de forma progresiva.
-- El ESP32 puede crecer como controlador de célula sin sobrecargar al Arduino.
-- La lógica de proceso queda separada de la generación de movimiento.
-- Será más fácil añadir sensores, cinta transportadora, pausas, condiciones y secuencias.
-- El protocolo serie mantiene una frontera clara entre órdenes de proceso y movimientos del brazo.
+Las entradas y salidas pertenecen al ESP32, no al Arduino. La interfaz envía la configuración al ESP32 mediante comandos `<IN,...>` y `<OUT,...>`. El firmware valida pines reservados: GPIO 1, 3, 6-11, 16 y 17 no se permiten; GPIO 34, 35, 36 y 39 no se permiten como salidas.

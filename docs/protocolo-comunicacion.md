@@ -1,174 +1,77 @@
 # Protocolo de comunicación
 
-La comunicación usa tramas ASCII delimitadas por `<` y `>` a `115200` baudios.
+Todas las tramas usan el formato `<...>` y se transmiten a **115200 baudios**.
 
-## Canales del brazo
+## PC / WebSerial -> ESP32
 
-| Canal | Función | Pin Arduino Uno | Límite mínimo | Límite máximo |
-| --- | --- | ---: | ---: | ---: |
-| `J1` | Eje 1 | 2 | 0° | 180° |
-| `J2` | Eje 2 | 4 | 0° | 180° |
-| `J3` | Eje 3 | 11 | 0° | 180° |
-| `J4` | Eje 4 | 6 | 0° | 180° |
-| `J5` | Eje 5 | 8 | 0° | 180° |
-| `J6` | Eje 6 | 10 | 0° | 180° |
-| `PINZA` / `J7` | Pinza | 5 | 95° | 180° |
+### Estado
 
-## Comandos de la interfaz hacia Arduino o ESP32 puente
+- `<PING>`: comprueba que el ESP32 responde.
+- `<STATUS>`: solicita estado general del controlador.
 
-### Mover pose completa
+### Entradas digitales
 
-```text
-<P,j1,j2,j3,j4,j5,j6,pinza>
-```
+- `<IN,CLEAR>`: elimina todas las entradas configuradas.
+- `<IN,ADD,id,pin,mode,activeState>`: configura una entrada.
+  - `mode`: `INPUT` o `INPUT_PULLUP`.
+  - `activeState`: `HIGH`, `LOW`, `1` o `0`.
+- `<IN,READ,id>`: lee una entrada.
+- `<IN,REMOVE,id>`: elimina una entrada.
 
-Ejemplo:
+### Salidas digitales
 
-```text
-<P,90,80,100,90,90,90,120>
-```
+- `<OUT,CLEAR>`: elimina todas las salidas configuradas.
+- `<OUT,ADD,id,pin,initialState>`: configura una salida y aplica su estado inicial.
+- `<OUT,SET,id,value>`: cambia una salida a `1/ON/HIGH` o `0/OFF/LOW`.
+- `<OUT,REMOVE,id>`: elimina una salida.
 
-Manda una posición objetivo completa para los 7 canales.
+### Programa del ESP32
 
-### Velocidad global
+- `<PROG,CLEAR>`
+- `<PROG,ADD,POSE,j1,j2,j3,j4,j5,j6,pinza,delayMs>`
+- `<PROG,ADD,OUT,id,value>`
+- `<PROG,ADD,WAIT_IN,id,state,timeoutMs>`
+- `<PROG,ADD,PAUSE,durationMs>`
+- `<PROG,ADD,SPEED,s,v1,v2,v3,a>`
+- `<PROG,ADD,HOME>`
+- `<PROG,RUN>`
+- `<PROG,STOP>`
+- `<PROG,STATUS>`
 
-```text
-<S,velocidad>
-```
+## Comandos reenviados al Arduino
 
-Ejemplo:
+El ESP32 distingue sus propios comandos y reenvía al Arduino solo los comandos de movimiento:
 
-```text
-<S,60>
-```
+- `<P,j1,j2,j3,j4,j5,j6,pinza>`
+- `<S,velocidad>`
+- `<V,v1,v2,v3>`
+- `<A,aceleracion>`
+- `<Q>`
+- `<H>`
 
-Define la velocidad global. En el firmware Arduino actual se aplica a `J4`, `J5`, `J6` y `PINZA`.
+## Respuestas del ESP32
 
-### Velocidades independientes de J1-J3
+- `<ESP32,READY>`
+- `<OK,mensaje>`
+- `<ERR,mensaje>`
+- `<IN,STATE,id,value,active>`
+- `<OUT,STATE,id,value>`
+- `<PROG,LOADED,totalSteps>`
+- `<RUN,START,totalSteps>`
+- `<RUN,STEP,index,total,type>`
+- `<RUN,DONE>`
+- `<RUN,STOPPED>`
+- `<RUN,ERROR,mensaje>`
+- `<ESP32,TX_ARDUINO,...>`
+- `<ESP32,RX_ARDUINO,...>`
 
-```text
-<V,v1,v2,v3>
-```
+## Respuestas compatibles del Arduino
 
-Ejemplo:
+- `<T,j1,j2,j3,j4,j5,j6,pinza>`
+- `<S,velocidad>`
+- `<V,v1,v2,v3>`
+- `<A,aceleracion>`
+- `<OK,mensaje>`
+- `<ERR,mensaje>`
 
-```text
-<V,50,60,70>
-```
-
-Define las velocidades independientes de los tres primeros ejes.
-
-### Aceleración
-
-```text
-<A,aceleracion>
-```
-
-Ejemplo:
-
-```text
-<A,300>
-```
-
-Configura el valor de aceleración en grados/seg². La primera versión del firmware valida y conserva este valor, aunque el movimiento progresivo implementado es simple.
-
-### Consulta de estado
-
-```text
-<Q>
-```
-
-Solicita el estado actual del brazo, velocidad global, velocidades independientes y aceleración.
-
-### Home
-
-```text
-<H>
-```
-
-Envía el brazo a una posición Home segura definida en el firmware.
-
-## Respuestas esperadas del Arduino
-
-### Posición actual
-
-```text
-<T,j1,j2,j3,j4,j5,j6,pinza>
-```
-
-Ejemplo:
-
-```text
-<T,90,90,90,90,90,90,120>
-```
-
-### Velocidad global
-
-```text
-<S,velocidad>
-```
-
-### Velocidades independientes
-
-```text
-<V,v1,v2,v3>
-```
-
-### Aceleración
-
-```text
-<A,aceleracion>
-```
-
-### Confirmación
-
-```text
-<OK,mensaje>
-```
-
-Ejemplos:
-
-```text
-<OK,ARDUINO_READY>
-<OK,POSE_RECIBIDA>
-<OK,HOME>
-```
-
-### Error
-
-```text
-<ERR,mensaje>
-```
-
-Ejemplos:
-
-```text
-<ERR,COMANDO_DESCONOCIDO>
-<ERR,P_REQUIERE_7_VALORES>
-```
-
-## Mensajes del ESP32 puente
-
-Al arrancar, el ESP32 envía:
-
-```text
-<ESP32,READY>
-```
-
-Cuando reenvía un comando al Arduino, informa con:
-
-```text
-<ESP32,TX_ARDUINO,[P,90,90,90,90,90,90,120]>
-```
-
-Cuando recibe una respuesta del Arduino, la reenvía al PC y además informa con:
-
-```text
-<ESP32,RX_ARDUINO,[T,90,90,90,90,90,90,120]>
-```
-
-En los mensajes de depuración se sustituyen los caracteres `<` y `>` por `[` y `]` para no crear tramas anidadas ambiguas.
-
-## Compatibilidad con la interfaz
-
-La interfaz analiza las tramas conocidas `T`, `S`, `V` y `A`. Las tramas `OK`, `ERR` y `ESP32` se muestran en el estado de recepción, pero no modifican sliders ni poses.
+El ESP32 reenvía a la interfaz la respuesta original del Arduino y además genera una línea de monitorización `<ESP32,RX_ARDUINO,...>`.

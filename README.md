@@ -1,121 +1,116 @@
-# Célula robótica didáctica pick and place
+# TFG Robótica · Brazo 6 ejes + pinza
 
-Repositorio base para el TFG de Automatización y Robótica Industrial de una célula robótica didáctica de tipo **pick and place**.
-
-El sistema está pensado para evolucionar desde el control directo de un brazo robótico mediante WebSerial hasta una célula completa gobernada por un ESP32, con Arduino Uno dedicado exclusivamente al motion control del brazo.
-
-## Contenido del repositorio
+Proyecto didáctico para controlar un brazo robótico de 6 ejes y pinza con una arquitectura en dos placas:
 
 ```text
-/
-├── README.md
-├── docs/
-│   ├── arquitectura.md
-│   ├── protocolo-comunicacion.md
-│   └── plan-desarrollo.md
-├── web/
-│   └── index.html
-├── arduino/
-│   └── brazo_motion_control/
-│       └── brazo_motion_control.ino
-├── esp32/
-│   └── esp32_controller/
-│       └── esp32_controller.ino
-└── examples/
-    └── programa_demo.json
+PC / navegador web -> WebSerial USB -> ESP32 -> Serial2/UART -> Arduino Uno -> servos del brazo
 ```
+
+- La **interfaz web** es la interfaz visual del usuario.
+- El **ESP32** es el controlador principal de la célula: entradas, salidas, esperas, pausas y secuencias.
+- El **Arduino Uno** se dedica solo al motion control del brazo.
+
+No se usa WiFi, Bluetooth, React, Vite, Node ni frameworks web.
+
+## Estructura principal
+
+- `web/index.html`: interfaz WebSerial completa.
+- `esp32/esp32_controller/esp32_controller.ino`: firmware del ESP32 controlador.
+- `arduino/brazo_motion_control/brazo_motion_control.ino`: firmware Arduino Uno para servos.
+- `docs/`: arquitectura, protocolo y plan.
+- `examples/programa_demo.json`: programa de ejemplo importable desde la interfaz.
 
 ## Datos reales del brazo
 
-- 6 ejes más pinza, 7 canales servo en total: `J1`, `J2`, `J3`, `J4`, `J5`, `J6` y `PINZA`.
-- Pines `J1..J7`: `{2,4,11,6,8,10,5}`.
-- `J7` corresponde a la pinza.
-- Límites de `J1..J6`: `0°` a `180°`.
-- Límites de `PINZA`: `95°` a `180°`.
-- Comunicación serie: `115200` baudios.
-- Protocolo base: tramas ASCII entre `<` y `>`.
-
-## Arquitectura actual
-
-```text
-PC / navegador web -> WebSerial USB -> Arduino Uno -> servos del brazo
-```
-
-En esta arquitectura se conecta la interfaz directamente al Arduino Uno. Es el modo recomendado para probar primero el firmware del brazo.
-
-## Arquitectura objetivo
-
-```text
-PC / navegador web -> WebSerial USB -> ESP32 -> UART/Serial -> Arduino Uno -> servos del brazo
-```
-
-En la arquitectura objetivo:
-
-- La interfaz HTML sigue siendo la interfaz visual del usuario.
-- El ESP32 actúa como controlador principal de la célula.
-- El ESP32 gestionará entradas, salidas, esperas, pausas y secuencias.
-- El Arduino Uno queda dedicado solamente al motion control del brazo.
+- Canales: `J1`, `J2`, `J3`, `J4`, `J5`, `J6` y `PINZA`.
+- Pines Arduino J1..J7: `{2,4,11,6,8,10,5}`.
+- J7 corresponde a la pinza.
+- J1..J6: 0 a 180 grados.
+- Pinza: 95 a 180 grados.
+- Comunicación serie: 115200 baudios.
 
 ## Cómo abrir la interfaz
 
-1. Abre Chrome o Edge en un ordenador con soporte WebSerial.
-2. Abre el archivo `web/index.html` directamente en el navegador, o publícalo con cualquier servidor estático simple.
-3. Pulsa **Conectar**.
-4. Selecciona el puerto serie del Arduino Uno o del ESP32, según el modo de prueba.
+1. Abre `web/index.html` en un navegador compatible con WebSerial, por ejemplo Chrome o Edge.
+2. Si el navegador bloquea WebSerial por abrir el archivo directamente, sirve la carpeta con un servidor estático simple o abre desde un origen local permitido.
+3. Pulsa **Conectar** y selecciona el puerto USB del ESP32.
+4. El monitor serie debe mostrar `<ESP32,READY>` al hacer `PING` o al reiniciar la placa.
 
-No se usa ningún framework ni dependencia externa: solo HTML, CSS y JavaScript puro.
+## Cómo cargar Arduino Uno
 
-## Cómo cargar el firmware Arduino
+1. Abre `arduino/brazo_motion_control/brazo_motion_control.ino` en Arduino IDE.
+2. Selecciona placa **Arduino Uno** y su puerto USB.
+3. Carga el sketch.
+4. El Arduino mantiene `Servo.h`, los pines `{2,4,11,6,8,10,5}`, la pinza 95-180 y los comandos `<P>`, `<S>`, `<V>`, `<A>`, `<Q>` y `<H>`.
 
-1. Abre Arduino IDE.
-2. Abre `arduino/brazo_motion_control/brazo_motion_control.ino`.
-3. Selecciona placa **Arduino Uno**.
-4. Selecciona el puerto USB del Arduino.
-5. Compila y carga.
-6. Conecta los servos respetando exactamente los pines `{2,4,11,6,8,10,5}`.
+## Cómo cargar ESP32
 
-El firmware usa solamente `Servo.h`, incluida en el entorno Arduino clásico.
+1. Abre `esp32/esp32_controller/esp32_controller.ino` en Arduino IDE.
+2. Selecciona tu placa ESP32.
+3. Carga el sketch.
+4. El ESP32 usa:
+   - `Serial` USB a 115200 baudios para el PC.
+   - `Serial2` a 115200 baudios para el Arduino.
+   - RX2 = GPIO16 y TX2 = GPIO17.
 
-## Cómo cargar el firmware ESP32
+## Conexión ESP32 ↔ Arduino
 
-1. Instala el soporte de placas ESP32 en Arduino IDE si todavía no está instalado.
-2. Abre `esp32/esp32_controller/esp32_controller.ino`.
-3. Selecciona tu placa ESP32.
-4. Revisa los pines UART2 definidos en el código (`RX2=16`, `TX2=17`) y ajústalos solo si tu cableado real lo requiere.
-5. Compila y carga.
+- ESP32 GPIO17 / TX2 -> RX del Arduino Uno.
+- TX del Arduino Uno -> ESP32 GPIO16 / RX2.
+- GND común entre placas.
 
-Esta primera versión no usa WiFi, Bluetooth, entradas, salidas ni editor de programas interno. Solo actúa como puente serie.
+> **Advertencia de niveles lógicos:** el Arduino Uno trabaja a 5 V y el ESP32 a 3,3 V. Usa divisor resistivo o conversor de nivel en la señal TX del Arduino hacia RX del ESP32.
 
-## Prueba 1: Arduino directo
+## Cómo probar conexión directa con Arduino
 
-1. Carga el firmware del Arduino Uno.
-2. Conecta el Arduino al PC por USB.
-3. Abre `web/index.html`.
-4. Pulsa **Conectar** y selecciona el puerto del Arduino.
-5. Usa **Leer estado**. Deberías recibir tramas como:
-   - `<T,j1,j2,j3,j4,j5,j6,pinza>`
-   - `<S,velocidad>`
-   - `<V,v1,v2,v3>`
-   - `<A,aceleracion>`
-6. Mueve sliders, guarda poses y reproduce secuencias.
+1. Conecta el Arduino Uno al PC por USB.
+2. Abre un monitor serie a 115200 baudios.
+3. Envía `<Q>`.
+4. Debes recibir tramas como `<T,...>`, `<S,...>`, `<V,...>` y `<A,...>`.
+5. Envía una pose segura, por ejemplo `<P,90,90,90,90,90,90,120>`.
 
-## Prueba 2: ESP32 como puente
+## Cómo probar conexión por ESP32
 
-1. Carga el firmware del Arduino Uno.
-2. Carga el firmware del ESP32.
-3. Cablea `TX2` del ESP32 hacia `RX` del Arduino y `RX2` del ESP32 hacia `TX` del Arduino, compartiendo `GND`.
-4. Conecta el ESP32 al PC por USB.
-5. Abre `web/index.html`.
-6. Pulsa **Conectar** y selecciona el puerto del ESP32.
-7. Al arrancar, el ESP32 envía `<ESP32,READY>`.
-8. Los comandos de la interfaz se reenvían al Arduino y las respuestas vuelven al PC.
+1. Carga ambos firmwares.
+2. Cablea `Serial2` entre ESP32 y Arduino con GND común y adaptación de nivel.
+3. Conecta el ESP32 al PC.
+4. Abre `web/index.html` y pulsa **Conectar**.
+5. Pulsa **Ping ESP32** y luego **Leer brazo**.
+6. En el monitor deben verse comandos enviados al ESP32, trazas `<ESP32,TX_ARDUINO,...>` y respuestas `<ESP32,RX_ARDUINO,...>`.
 
-## Advertencia de niveles lógicos Arduino Uno / ESP32
+## Cómo crear entradas y salidas
 
-El Arduino Uno trabaja normalmente a **5 V** y el ESP32 a **3,3 V**. No conectes directamente una salida de 5 V del Arduino a una entrada del ESP32 sin adaptación de nivel.
+1. En **Configuración de entradas y salidas**, crea una entrada con nombre, GPIO, modo `INPUT` o `INPUT_PULLUP` y estado activo `HIGH` o `LOW`.
+2. Crea una salida con nombre, GPIO y estado inicial.
+3. Pulsa los botones de lectura o ON/OFF para probar manualmente.
+4. La configuración se guarda en `localStorage` y se reenvía al ESP32 al cargar programas.
 
-Recomendación mínima:
+## Cómo crear una secuencia
 
-- Usa un divisor resistivo o conversor de nivel lógico en la línea `TX Arduino -> RX ESP32`.
-- La línea `TX ESP32 -> RX Arduino` suele ser leída correctamente por el Arduino Uno como nivel alto, pero conviene validarlo en el montaje real.
-- Une siempre las masas (`GND`) de Arduino y ESP32.
+1. Ajusta los sliders del brazo y guarda una o varias poses.
+2. En **Editor de programa**, añade pasos:
+   - `Pose` para enviar posiciones al Arduino.
+   - `Activar salida` para controlar una salida del ESP32.
+   - `Esperar entrada` para esperar un sensor activo/inactivo con timeout.
+   - `Pausa` para retardos temporales.
+   - `Velocidad` para enviar `<S>`, `<V>` y `<A>` al Arduino.
+   - `Home` para enviar `<H>`.
+3. Pulsa **Validar**.
+4. Pulsa **Enviar al ESP32**.
+5. Pulsa **Ejecutar**.
+6. Puedes detener con **Detener**, que envía `<PROG,STOP>`.
+
+También puedes importar `examples/programa_demo.json` desde el área JSON del editor.
+
+## Comandos principales
+
+El ESP32 reenvía al Arduino solo estos comandos de movimiento:
+
+- `<P,j1,j2,j3,j4,j5,j6,pinza>`
+- `<S,velocidad>`
+- `<V,v1,v2,v3>`
+- `<A,aceleracion>`
+- `<Q>`
+- `<H>`
+
+Los comandos propios del ESP32 incluyen `<PING>`, `<STATUS>`, `<IN,...>`, `<OUT,...>` y `<PROG,...>`. Consulta `docs/protocolo-comunicacion.md` para el detalle completo.
