@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Brazo 7 ejes + Pinza - WebSerial</title>
+  <title>Brazo 6 ejes + Pinza - WebSerial</title>
   <style>
     :root{
       color-scheme: light;
@@ -366,6 +366,30 @@
 
     .divider{height:10px}
 
+
+
+    .full-width{margin-top:18px}
+    .config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
+    .program-grid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+    .list-card{display:grid;gap:8px;margin-top:12px}
+    .item-card{border:1px solid #e2e8f0;border-radius:16px;padding:12px;background:#fff;display:grid;gap:8px}
+    .item-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .item-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .item-actions button{min-height:34px;padding:7px 10px;border-radius:11px;font-size:12px}
+    .serial-monitor{min-height:220px;max-height:360px;overflow:auto;background:#0f172a;color:#dbeafe;border-radius:16px;padding:12px;font-size:12px;line-height:1.45;white-space:pre-wrap}
+    .field label{width:auto;margin-bottom:6px;font-size:13px}
+    .field input,.field select{min-height:42px;padding:9px}
+    .field select{min-height:42px}
+    .program-step{border-left:5px solid var(--primary)}
+    .badge{display:inline-flex;border-radius:999px;padding:4px 8px;background:#dbeafe;color:#1d4ed8;font-weight:800;font-size:12px}
+
+    @media (max-width: 920px){
+      .config-grid,
+      .program-grid,
+      .form-grid{grid-template-columns:1fr}
+    }
+
     @media (max-width: 920px){
       .hero,
       .layout,
@@ -390,8 +414,8 @@
   <main class="app">
     <section class="hero">
       <div>
-        <div class="eyebrow">⚙️ Panel WebSerial · Arduino UNO</div>
-        <h1>Brazo robótico de 7 ejes + pinza</h1>
+        <div class="eyebrow">⚙️ Panel WebSerial · Arduino UNO / ESP32 puente</div>
+        <h1>Brazo robótico de 6 ejes + pinza</h1>
         <p>Interfaz de control para mover articulaciones, ajustar velocidades, guardar poses y reproducir secuencias desde el navegador.</p>
       </div>
       <aside class="hero-panel" aria-label="Resumen del sistema">
@@ -407,7 +431,7 @@
           <div class="card-header">
             <div>
               <h2>Control principal</h2>
-              <div class="subtitle">Conecta el Arduino, lee el estado o manda el brazo a Home.</div>
+              <div class="subtitle">Conecta el Arduino directo o el ESP32 en modo puente, lee el estado o manda el brazo a Home.</div>
             </div>
             <span class="pill">115200 baud</span>
           </div>
@@ -541,6 +565,110 @@
         </div>
       </aside>
     </section>
+
+    <section class="card full-width">
+      <div class="card-header">
+        <div>
+          <h2>Configuración de entradas y salidas</h2>
+          <div class="subtitle">Define E/S digitales del ESP32. Se validan pines reservados de USB, Serial2 y memoria flash.</div>
+        </div>
+        <span class="pill">ESP32 GPIO</span>
+      </div>
+
+      <div class="config-grid">
+        <div class="surface">
+          <h3>Entradas digitales</h3>
+          <div class="form-grid" style="margin-top:12px">
+            <div class="field"><label for="inId">ID</label><input id="inId" type="text" placeholder="sensor1"></div>
+            <div class="field"><label for="inName">Nombre</label><input id="inName" type="text" placeholder="Sensor pieza"></div>
+            <div class="field"><label for="inPin">GPIO</label><input id="inPin" type="number" min="0" max="39" value="32"></div>
+            <div class="field"><label for="inMode">Modo</label><select id="inMode"><option>INPUT</option><option>INPUT_PULLUP</option></select></div>
+            <div class="field"><label for="inActive">Activo</label><select id="inActive"><option>HIGH</option><option>LOW</option></select></div>
+          </div>
+          <div class="button-row" style="margin-top:10px">
+            <button id="btnAddInput" class="btn-primary" disabled>➕ Añadir entrada</button>
+            <button id="btnClearInputs" class="btn-danger" disabled>Vaciar entradas</button>
+          </div>
+          <div id="inputList" class="list-card"></div>
+        </div>
+
+        <div class="surface">
+          <h3>Salidas digitales</h3>
+          <div class="form-grid" style="margin-top:12px">
+            <div class="field"><label for="outId">ID</label><input id="outId" type="text" placeholder="salida1"></div>
+            <div class="field"><label for="outName">Nombre</label><input id="outName" type="text" placeholder="Actuador"></div>
+            <div class="field"><label for="outPin">GPIO</label><input id="outPin" type="number" min="0" max="39" value="25"></div>
+            <div class="field"><label for="outInitial">Inicial</label><select id="outInitial"><option value="0">OFF</option><option value="1">ON</option></select></div>
+          </div>
+          <div class="button-row" style="margin-top:10px">
+            <button id="btnAddOutput" class="btn-primary" disabled>➕ Añadir salida</button>
+            <button id="btnClearOutputs" class="btn-danger" disabled>Vaciar salidas</button>
+          </div>
+          <div id="outputList" class="list-card"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card full-width">
+      <div class="card-header">
+        <div>
+          <h2>Editor de programa</h2>
+          <div class="subtitle">Crea secuencias de célula que ejecutará el ESP32 paso a paso.</div>
+        </div>
+        <span class="pill">Máx. 100 pasos</span>
+      </div>
+
+      <div class="program-grid">
+        <div class="surface">
+          <h3>Añadir paso</h3>
+          <div class="field" style="margin-top:12px"><label for="stepType">Tipo</label><select id="stepType">
+            <option value="POSE">Pose del brazo</option>
+            <option value="OUT">Activar salida</option>
+            <option value="WAIT_IN">Esperar entrada</option>
+            <option value="PAUSE">Pausa</option>
+            <option value="SPEED">Velocidad</option>
+            <option value="HOME">Home</option>
+          </select></div>
+          <div id="stepEditor" style="margin-top:12px"></div>
+          <div class="button-row" style="margin-top:12px">
+            <button id="btnAddStep" class="btn-primary" disabled>➕ Añadir paso</button>
+            <button id="btnValidateProgram" class="btn-soft" disabled>✅ Validar</button>
+          </div>
+          <div class="button-row" style="margin-top:10px">
+            <button id="btnSendProgram" class="btn-soft" disabled>📤 Enviar al ESP32</button>
+            <button id="btnRunProgram" class="btn-play" disabled>▶ Ejecutar</button>
+            <button id="btnStopProgram" class="btn-danger" disabled>⏹ Detener</button>
+          </div>
+          <div class="button-row" style="margin-top:10px">
+            <button id="btnClearProgram" class="btn-danger" disabled>Limpiar programa</button>
+          </div>
+        </div>
+
+        <div>
+          <div id="programList" class="list-card"></div>
+          <div class="grid2" style="margin-top:14px">
+            <div>
+              <h3>Importar / exportar programa</h3>
+              <textarea id="programIo" placeholder="Exporta o pega aquí un programa JSON completo."></textarea>
+              <div class="button-row" style="margin-top:10px">
+                <button id="btnExportProgram" class="btn-soft" disabled>⬇ Exportar programa</button>
+                <button id="btnImportProgram" class="btn-soft" disabled>⬆ Importar programa</button>
+              </div>
+            </div>
+            <div>
+              <h3>Monitor serie</h3>
+              <div id="serialMonitor" class="serial-monitor"></div>
+              <div class="button-row" style="margin-top:10px">
+                <button id="btnClearMonitor" class="btn-soft">Limpiar monitor</button>
+                <button id="btnPing" class="btn-soft" disabled>📶 PING</button>
+                <button id="btnStatusEsp" class="btn-soft" disabled>📋 STATUS</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
 <script>
@@ -606,6 +734,16 @@ function setControlsEnabled(on){
   el("btnStopPlay").disabled = !on;
   el("btnExport").disabled = !on;
   el("btnImport").disabled = !on;
+
+  ["btnAddInput","btnClearInputs","btnAddOutput","btnClearOutputs","btnAddStep",
+   "btnValidateProgram","btnClearProgram","btnExportProgram","btnImportProgram"].forEach(id=>{
+    const node = el(id);
+    if(node) node.disabled = false;
+  });
+  ["btnSendProgram","btnRunProgram","btnStopProgram","btnPing","btnStatusEsp"].forEach(id=>{
+    const node = el(id);
+    if(node) node.disabled = !on;
+  });
 }
 
 async function connect(){
@@ -619,7 +757,7 @@ async function connect(){
   writer = port.writable.getWriter();
   reader = port.readable.getReader();
 
-  st("Conectado. (El UNO suele resetear al abrir el puerto)");
+  st("Conectado. (El UNO/ESP32 puede resetear al abrir el puerto)");
   setControlsEnabled(true);
 
   // espera reset
@@ -630,6 +768,7 @@ async function connect(){
 
 async function sendLine(s){
   if(!writer) return;
+  monitorLog("TX", s);
   await writer.write(new TextEncoder().encode(s + "\n"));
 }
 
@@ -658,6 +797,7 @@ function startReadLoop(){
 
 function handleLine(line){
   st("RX: " + line);
+  monitorLog("RX", line);
 
   const frames = line.match(/<[^>]*>/g) || [];
   for(const f of frames){
@@ -775,6 +915,7 @@ function savePose(){
   poses.push({ name: `Pose ${poses.length+1}`, vals: currentVals() });
   saveToStorage();
   renderPoseList();
+  refreshProgramSelectors();
 }
 function deleteSelectedPose(){
   const idx = el("poseList").selectedIndex;
@@ -782,11 +923,13 @@ function deleteSelectedPose(){
   poses.splice(idx, 1);
   saveToStorage();
   renderPoseList();
+  refreshProgramSelectors();
 }
 function clearPoses(){
   poses = [];
   saveToStorage();
   renderPoseList();
+  refreshProgramSelectors();
 }
 
 function delayMs(ms){ return new Promise(r => setTimeout(r, ms)); }
@@ -850,6 +993,7 @@ function importPoses(){
     poses = cleaned;
     saveToStorage();
     renderPoseList();
+    refreshProgramSelectors();
     st("Import OK.");
   }catch(e){
     st("Import: JSON inválido.");
@@ -882,10 +1026,293 @@ el("poseList").addEventListener("change", ()=>{
   }
 });
 
+
+
+// --- Configuración de entradas/salidas y editor de programa ESP32 ---
+let digitalInputs = [];   // {id,name,pin,mode,activeState}
+let digitalOutputs = [];  // {id,name,pin,initialState,value}
+let programSteps = [];    // pasos exportables al ESP32
+
+function monitorLog(kind, text){
+  const box = el("serialMonitor");
+  if(!box) return;
+  const time = new Date().toLocaleTimeString();
+  box.textContent += `[${time}] ${kind}: ${text}\n`;
+  box.scrollTop = box.scrollHeight;
+}
+
+function safeId(raw){
+  return String(raw || "").trim().replace(/\s+/g,"_").replace(/[^A-Za-z0-9_\-]/g,"");
+}
+function intVal(id, def=0){
+  const n = parseInt(el(id).value,10);
+  return Number.isFinite(n) ? n : def;
+}
+function saveCellStorage(){
+  localStorage.setItem("cell_inputs_v1", JSON.stringify(digitalInputs));
+  localStorage.setItem("cell_outputs_v1", JSON.stringify(digitalOutputs));
+  localStorage.setItem("cell_program_v1", JSON.stringify(programSteps));
+}
+function loadCellStorage(){
+  try{ digitalInputs = JSON.parse(localStorage.getItem("cell_inputs_v1") || "[]"); }catch(e){ digitalInputs = []; }
+  try{ digitalOutputs = JSON.parse(localStorage.getItem("cell_outputs_v1") || "[]"); }catch(e){ digitalOutputs = []; }
+  try{ programSteps = JSON.parse(localStorage.getItem("cell_program_v1") || "[]"); }catch(e){ programSteps = []; }
+  renderInputs(); renderOutputs(); renderStepEditor(); renderProgram();
+}
+
+function inputLabel(input){ return `${input.name || input.id} (${input.id} · GPIO${input.pin} · ${input.mode} · activo ${input.activeState})`; }
+function outputLabel(output){ return `${output.name || output.id} (${output.id} · GPIO${output.pin})`; }
+
+async function sendEsp32ConfigInput(input){
+  await sendLine(`<IN,ADD,${input.id},${input.pin},${input.mode},${input.activeState}>`);
+}
+async function sendEsp32ConfigOutput(output){
+  await sendLine(`<OUT,ADD,${output.id},${output.pin},${output.initialState}>`);
+}
+
+function addInputConfig(){
+  const input = {
+    id: safeId(el("inId").value),
+    name: String(el("inName").value || "").trim(),
+    pin: intVal("inPin",32),
+    mode: el("inMode").value,
+    activeState: el("inActive").value
+  };
+  if(!input.id){ st("Entrada: ID obligatorio."); return; }
+  if(digitalInputs.some(x=>x.id===input.id)){ st("Entrada: ID repetido."); return; }
+  digitalInputs.push(input);
+  saveCellStorage(); renderInputs(); refreshProgramSelectors();
+  sendEsp32ConfigInput(input).catch(()=>{});
+}
+function removeInputConfig(id){
+  digitalInputs = digitalInputs.filter(x=>x.id!==id);
+  saveCellStorage(); renderInputs(); refreshProgramSelectors();
+  sendLine(`<IN,REMOVE,${id}>`).catch(()=>{});
+}
+function clearInputConfigs(){
+  digitalInputs = [];
+  saveCellStorage(); renderInputs(); refreshProgramSelectors();
+  sendLine("<IN,CLEAR>").catch(()=>{});
+}
+function readInputConfig(id){ sendLine(`<IN,READ,${id}>`).catch(()=>{}); }
+function renderInputs(){
+  const box = el("inputList"); if(!box) return;
+  box.innerHTML = "";
+  if(digitalInputs.length===0){ box.innerHTML = '<div class="small">No hay entradas configuradas.</div>'; return; }
+  digitalInputs.forEach(input=>{
+    const d = document.createElement("div");
+    d.className = "item-card";
+    d.innerHTML = `<div class="item-top"><div><span class="badge">IN</span> <b>${inputLabel(input)}</b></div></div>
+      <div class="item-actions"><button data-act="read">Leer</button><button class="btn-danger" data-act="remove">Eliminar</button></div>`;
+    d.querySelector('[data-act="read"]').addEventListener("click",()=>readInputConfig(input.id));
+    d.querySelector('[data-act="remove"]').addEventListener("click",()=>removeInputConfig(input.id));
+    box.appendChild(d);
+  });
+}
+
+function addOutputConfig(){
+  const output = {
+    id: safeId(el("outId").value),
+    name: String(el("outName").value || "").trim(),
+    pin: intVal("outPin",25),
+    initialState: parseInt(el("outInitial").value,10),
+    value: parseInt(el("outInitial").value,10)
+  };
+  if(!output.id){ st("Salida: ID obligatorio."); return; }
+  if(digitalOutputs.some(x=>x.id===output.id)){ st("Salida: ID repetido."); return; }
+  digitalOutputs.push(output);
+  saveCellStorage(); renderOutputs(); refreshProgramSelectors();
+  sendEsp32ConfigOutput(output).catch(()=>{});
+}
+function setOutputConfig(id, value){
+  const out = digitalOutputs.find(x=>x.id===id);
+  if(out) out.value = value;
+  saveCellStorage(); renderOutputs();
+  sendLine(`<OUT,SET,${id},${value}>`).catch(()=>{});
+}
+function removeOutputConfig(id){
+  digitalOutputs = digitalOutputs.filter(x=>x.id!==id);
+  saveCellStorage(); renderOutputs(); refreshProgramSelectors();
+  sendLine(`<OUT,REMOVE,${id}>`).catch(()=>{});
+}
+function clearOutputConfigs(){
+  digitalOutputs = [];
+  saveCellStorage(); renderOutputs(); refreshProgramSelectors();
+  sendLine("<OUT,CLEAR>").catch(()=>{});
+}
+function renderOutputs(){
+  const box = el("outputList"); if(!box) return;
+  box.innerHTML = "";
+  if(digitalOutputs.length===0){ box.innerHTML = '<div class="small">No hay salidas configuradas.</div>'; return; }
+  digitalOutputs.forEach(output=>{
+    const d = document.createElement("div");
+    d.className = "item-card";
+    d.innerHTML = `<div class="item-top"><div><span class="badge">OUT</span> <b>${outputLabel(output)}</b><div class="small">Estado actual interfaz: ${output.value ? "ON" : "OFF"}</div></div></div>
+      <div class="item-actions"><button data-act="on">ON</button><button data-act="off">OFF</button><button class="btn-danger" data-act="remove">Eliminar</button></div>`;
+    d.querySelector('[data-act="on"]').addEventListener("click",()=>setOutputConfig(output.id,1));
+    d.querySelector('[data-act="off"]').addEventListener("click",()=>setOutputConfig(output.id,0));
+    d.querySelector('[data-act="remove"]').addEventListener("click",()=>removeOutputConfig(output.id));
+    box.appendChild(d);
+  });
+}
+
+function optionHtml(items, selected=""){
+  return items.map(x=>`<option value="${x.id}" ${x.id===selected?"selected":""}>${x.name || x.id} (${x.id})</option>`).join("");
+}
+function poseOptions(){
+  return poses.map((p,i)=>`<option value="${i}">${i+1}. ${p.name}</option>`).join("");
+}
+function renderStepEditor(){
+  const box = el("stepEditor"); if(!box) return;
+  const type = el("stepType").value;
+  if(type === "POSE"){
+    box.innerHTML = `<div class="field"><label>Origen</label><select id="poseSource"><option value="CURRENT">Sliders actuales</option><option value="SAVED">Pose guardada</option></select></div>
+      <div class="field" style="margin-top:10px"><label>Pose guardada</label><select id="poseSelect">${poseOptions()}</select></div>
+      <div class="field" style="margin-top:10px"><label>Delay posterior (ms)</label><input id="poseDelay" type="number" min="0" value="800"></div>`;
+  } else if(type === "OUT"){
+    box.innerHTML = `<div class="field"><label>Salida</label><select id="stepOutId">${optionHtml(digitalOutputs)}</select></div>
+      <div class="field" style="margin-top:10px"><label>Valor</label><select id="stepOutValue"><option value="1">ON</option><option value="0">OFF</option></select></div>`;
+  } else if(type === "WAIT_IN"){
+    box.innerHTML = `<div class="field"><label>Entrada</label><select id="stepInId">${optionHtml(digitalInputs)}</select></div>
+      <div class="field" style="margin-top:10px"><label>Estado esperado</label><select id="stepInState"><option value="1">Activa</option><option value="0">Inactiva</option></select></div>
+      <div class="field" style="margin-top:10px"><label>Timeout (ms)</label><input id="stepInTimeout" type="number" min="1" value="10000"></div>`;
+  } else if(type === "PAUSE"){
+    box.innerHTML = `<div class="field"><label>Duración (ms)</label><input id="pauseDuration" type="number" min="1" value="500"></div>`;
+  } else if(type === "SPEED"){
+    box.innerHTML = `<div class="form-grid"><div class="field"><label>Global</label><input id="stepS" type="number" min="1" max="180" value="${clamp(el("spd").value,1,180)}"></div>
+      <div class="field"><label>V1</label><input id="stepV1" type="number" min="1" max="180" value="${clamp(el("v1").value,1,180)}"></div>
+      <div class="field"><label>V2</label><input id="stepV2" type="number" min="1" max="180" value="${clamp(el("v2").value,1,180)}"></div>
+      <div class="field"><label>V3</label><input id="stepV3" type="number" min="1" max="180" value="${clamp(el("v3").value,1,180)}"></div>
+      <div class="field"><label>A</label><input id="stepA" type="number" min="10" max="1200" value="${clamp(el("acc").value,10,1200)}"></div></div>`;
+  } else {
+    box.innerHTML = '<div class="hint">🏠 Este paso enviará &lt;H&gt; al Arduino mediante el ESP32.</div>';
+  }
+}
+function refreshProgramSelectors(){ renderStepEditor(); renderProgram(); }
+
+function addProgramStep(){
+  if(programSteps.length >= 100){ st("Máximo 100 pasos."); return; }
+  const type = el("stepType").value;
+  let step = {type};
+  if(type === "POSE"){
+    let vals;
+    if(el("poseSource").value === "SAVED"){
+      const idx = parseInt(el("poseSelect").value,10);
+      if(!poses[idx]){ st("No hay pose guardada seleccionada."); return; }
+      vals = poses[idx].vals.map((v,i)=>clamp(v,mins[i],maxs[i]));
+      step.source = poses[idx].name;
+    }else{
+      vals = currentVals();
+      step.source = "Sliders actuales";
+    }
+    step.values = vals;
+    step.delayMs = Math.max(0, intVal("poseDelay",0));
+  } else if(type === "OUT"){
+    if(!el("stepOutId").value){ st("Configura una salida antes de añadir este paso."); return; }
+    step.id = el("stepOutId").value; step.value = parseInt(el("stepOutValue").value,10);
+  } else if(type === "WAIT_IN"){
+    if(!el("stepInId").value){ st("Configura una entrada antes de añadir este paso."); return; }
+    step.id = el("stepInId").value; step.state = parseInt(el("stepInState").value,10); step.timeoutMs = Math.max(1,intVal("stepInTimeout",10000));
+  } else if(type === "PAUSE"){
+    step.durationMs = Math.max(1,intVal("pauseDuration",500));
+  } else if(type === "SPEED"){
+    step.s = clamp(el("stepS").value,1,180); step.v1 = clamp(el("stepV1").value,1,180); step.v2 = clamp(el("stepV2").value,1,180); step.v3 = clamp(el("stepV3").value,1,180); step.a = clamp(el("stepA").value,10,1200);
+  }
+  programSteps.push(step);
+  saveCellStorage(); renderProgram();
+}
+function describeStep(step){
+  if(step.type==="POSE") return `POSE [${step.values.join(",")}] delay ${step.delayMs||0} ms`;
+  if(step.type==="OUT") return `OUT ${step.id} = ${step.value?"ON":"OFF"}`;
+  if(step.type==="WAIT_IN") return `WAIT_IN ${step.id} ${step.state?"activa":"inactiva"} timeout ${step.timeoutMs} ms`;
+  if(step.type==="PAUSE") return `PAUSE ${step.durationMs} ms`;
+  if(step.type==="SPEED") return `SPEED S=${step.s}, V=${step.v1}/${step.v2}/${step.v3}, A=${step.a}`;
+  if(step.type==="HOME") return "HOME";
+  return step.type;
+}
+function renderProgram(){
+  const box = el("programList"); if(!box) return;
+  box.innerHTML = "";
+  if(programSteps.length===0){ box.innerHTML = '<div class="small">Programa vacío.</div>'; return; }
+  programSteps.forEach((step,idx)=>{
+    const d=document.createElement("div");
+    d.className="item-card program-step";
+    d.innerHTML=`<div class="item-top"><div><span class="badge">${idx+1}</span> <b>${describeStep(step)}</b></div></div>
+      <div class="item-actions"><button data-act="up">↑</button><button data-act="down">↓</button><button data-act="dup">Duplicar</button><button class="btn-danger" data-act="del">Borrar</button></div>`;
+    d.querySelector('[data-act="up"]').addEventListener("click",()=>moveStep(idx,-1));
+    d.querySelector('[data-act="down"]').addEventListener("click",()=>moveStep(idx,1));
+    d.querySelector('[data-act="dup"]').addEventListener("click",()=>duplicateStep(idx));
+    d.querySelector('[data-act="del"]').addEventListener("click",()=>deleteStep(idx));
+    box.appendChild(d);
+  });
+}
+function moveStep(idx,dir){ const j=idx+dir; if(j<0||j>=programSteps.length) return; [programSteps[idx],programSteps[j]]=[programSteps[j],programSteps[idx]]; saveCellStorage(); renderProgram(); }
+function duplicateStep(idx){ if(programSteps.length>=100) return; programSteps.splice(idx+1,0,JSON.parse(JSON.stringify(programSteps[idx]))); saveCellStorage(); renderProgram(); }
+function deleteStep(idx){ programSteps.splice(idx,1); saveCellStorage(); renderProgram(); }
+function clearProgram(){ programSteps=[]; saveCellStorage(); renderProgram(); sendLine("<PROG,CLEAR>").catch(()=>{}); }
+function validateProgram(showOk=true){
+  for(const [i,step] of programSteps.entries()){
+    if(step.type==="POSE" && (!Array.isArray(step.values)||step.values.length!==N)) return `Paso ${i+1}: pose inválida`;
+    if(step.type==="OUT" && !digitalOutputs.some(x=>x.id===step.id)) return `Paso ${i+1}: salida no configurada`;
+    if(step.type==="WAIT_IN" && !digitalInputs.some(x=>x.id===step.id)) return `Paso ${i+1}: entrada no configurada`;
+  }
+  if(showOk) st(`Programa válido (${programSteps.length} pasos).`);
+  return "";
+}
+function programExportObject(){ return {version:1, inputs:digitalInputs, outputs:digitalOutputs, steps:programSteps}; }
+function exportProgram(){ el("programIo").value = JSON.stringify(programExportObject(), null, 2); }
+function importProgram(){
+  try{
+    const data=JSON.parse(el("programIo").value);
+    digitalInputs=Array.isArray(data.inputs)?data.inputs:[];
+    digitalOutputs=Array.isArray(data.outputs)?data.outputs:[];
+    programSteps=Array.isArray(data.steps)?data.steps:[];
+    saveCellStorage(); renderInputs(); renderOutputs(); refreshProgramSelectors(); renderProgram(); st("Programa importado.");
+  }catch(e){ st("JSON de programa inválido."); }
+}
+function commandForStep(step){
+  if(step.type==="POSE") return `<PROG,ADD,POSE,${step.values.map((v,i)=>clamp(v,mins[i],maxs[i])).join(",")},${Math.max(0,step.delayMs||0)}>`;
+  if(step.type==="OUT") return `<PROG,ADD,OUT,${step.id},${step.value?1:0}>`;
+  if(step.type==="WAIT_IN") return `<PROG,ADD,WAIT_IN,${step.id},${step.state?1:0},${Math.max(1,step.timeoutMs||1)}>`;
+  if(step.type==="PAUSE") return `<PROG,ADD,PAUSE,${Math.max(1,step.durationMs||1)}>`;
+  if(step.type==="SPEED") return `<PROG,ADD,SPEED,${clamp(step.s,1,180)},${clamp(step.v1,1,180)},${clamp(step.v2,1,180)},${clamp(step.v3,1,180)},${clamp(step.a,10,1200)}>`;
+  if(step.type==="HOME") return "<PROG,ADD,HOME>";
+  return "";
+}
+async function sendProgramToEsp32(){
+  const err=validateProgram(false); if(err){ st(err); monitorLog("ERR",err); return; }
+  await sendLine("<IN,CLEAR>");
+  for(const input of digitalInputs) await sendEsp32ConfigInput(input);
+  await sendLine("<OUT,CLEAR>");
+  for(const output of digitalOutputs) await sendEsp32ConfigOutput(output);
+  await sendLine("<PROG,CLEAR>");
+  for(const step of programSteps){ const cmd=commandForStep(step); if(cmd) await sendLine(cmd); }
+  await sendLine("<PROG,STATUS>");
+}
+async function runProgram(){ await sendProgramToEsp32(); await sendLine("<PROG,RUN>"); }
+
+el("btnAddInput").addEventListener("click", addInputConfig);
+el("btnClearInputs").addEventListener("click", clearInputConfigs);
+el("btnAddOutput").addEventListener("click", addOutputConfig);
+el("btnClearOutputs").addEventListener("click", clearOutputConfigs);
+el("stepType").addEventListener("change", renderStepEditor);
+el("btnAddStep").addEventListener("click", addProgramStep);
+el("btnValidateProgram").addEventListener("click", ()=>validateProgram(true));
+el("btnSendProgram").addEventListener("click", ()=>sendProgramToEsp32().catch(e=>st("Error enviando programa: "+e)));
+el("btnRunProgram").addEventListener("click", ()=>runProgram().catch(e=>st("Error ejecutando programa: "+e)));
+el("btnStopProgram").addEventListener("click", ()=>sendLine("<PROG,STOP>").catch(()=>{}));
+el("btnClearProgram").addEventListener("click", clearProgram);
+el("btnExportProgram").addEventListener("click", exportProgram);
+el("btnImportProgram").addEventListener("click", importProgram);
+el("btnClearMonitor").addEventListener("click", ()=>{ el("serialMonitor").textContent=""; });
+el("btnPing").addEventListener("click", ()=>sendLine("<PING>").catch(()=>{}));
+el("btnStatusEsp").addEventListener("click", ()=>sendLine("<STATUS>").catch(()=>{}));
+
 // Init
 buildJoints();
 hookControls();
 loadFromStorage();
+loadCellStorage();
 setControlsEnabled(false);
 </script>
 </body>

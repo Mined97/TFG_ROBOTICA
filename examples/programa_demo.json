@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "name": "Programa demo pick and place futuro",
+  "description": "Ejemplo exportable/importable por la interfaz. Las E/S representan señales genericas del ESP32; no implementa una cinta concreta.",
+  "inputs": [
+    {
+      "id": "in_pieza",
+      "name": "Entrada de deteccion de pieza",
+      "pin": 32,
+      "mode": "INPUT_PULLUP",
+      "activeState": "LOW"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out_actuador",
+      "name": "Salida digital generica",
+      "pin": 25,
+      "initialState": 0,
+      "value": 0
+    }
+  ],
+  "steps": [
+    {
+      "type": "SPEED",
+      "s": 60,
+      "v1": 60,
+      "v2": 60,
+      "v3": 60,
+      "a": 300
+    },
+    {
+      "type": "POSE",
+      "source": "Pose inicial segura",
+      "values": [90, 90, 90, 90, 90, 90, 120],
+      "delayMs": 800
+    },
+    {
+      "type": "OUT",
+      "id": "out_actuador",
+      "value": 1
+    },
+    {
+      "type": "WAIT_IN",
+      "id": "in_pieza",
+      "state": 1,
+      "timeoutMs": 10000
+    },
+    {
+      "type": "PAUSE",
+      "durationMs": 500
+    },
+    {
+      "type": "POSE",
+      "source": "Segunda pose de aproximacion",
+      "values": [110, 75, 105, 90, 85, 95, 180],
+      "delayMs": 800
+    },
+    {
+      "type": "POSE",
+      "source": "Cerrar pinza",
+      "values": [110, 75, 105, 90, 85, 95, 95],
+      "delayMs": 400
+    },
+    {
+      "type": "POSE",
+      "source": "Abrir pinza",
+      "values": [110, 75, 105, 90, 85, 95, 180],
+      "delayMs": 400
+    },
+    {
+      "type": "OUT",
+      "id": "out_actuador",
+      "value": 0
+    }
+  ]
+}
