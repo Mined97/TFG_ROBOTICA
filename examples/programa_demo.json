@@ -1,0 +1,70 @@
+{
+  "name": "Programa demo futuro pick and place",
+  "version": 1,
+  "description": "Ejemplo de secuencia prevista para el ESP32. No implica control real de E/S en la version puente inicial.",
+  "steps": [
+    {
+      "type": "pose",
+      "name": "Pose inicial segura",
+      "command": "<P,90,90,90,90,90,90,120>",
+      "values": {
+        "j1": 90,
+        "j2": 90,
+        "j3": 90,
+        "j4": 90,
+        "j5": 90,
+        "j6": 90,
+        "pinza": 120
+      }
+    },
+    {
+      "type": "digital_output",
+      "name": "Activar salida futura de cinta",
+      "output": "DO1",
+      "value": true
+    },
+    {
+      "type": "wait_input",
+      "name": "Esperar sensor de pieza",
+      "input": "DI1",
+      "expected": true,
+      "timeout_ms": 10000
+    },
+    {
+      "type": "pause",
+      "name": "Pausa de estabilizacion",
+      "duration_ms": 500
+    },
+    {
+      "type": "pose",
+      "name": "Segunda pose de aproximacion",
+      "command": "<P,110,75,105,90,85,95,180>",
+      "values": {
+        "j1": 110,
+        "j2": 75,
+        "j3": 105,
+        "j4": 90,
+        "j5": 85,
+        "j6": 95,
+        "pinza": 180
+      }
+    },
+    {
+      "type": "gripper",
+      "name": "Cerrar pinza",
+      "command": "<P,110,75,105,90,85,95,95>",
+      "pinza": 95
+    },
+    {
+      "type": "pause",
+      "name": "Mantener pieza",
+      "duration_ms": 300
+    },
+    {
+      "type": "gripper",
+      "name": "Abrir pinza",
+      "command": "<P,110,75,105,90,85,95,180>",
+      "pinza": 180
+    }
+  ]
+}
