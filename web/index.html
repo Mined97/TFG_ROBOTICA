@@ -262,11 +262,19 @@
 </main>
 <script>
 const N=7,names=["J1","J2","J3","J4","J5","J6","PINZA"],mins=[0,0,0,0,0,0,95],maxs=[180,180,180,180,180,180,180],home=[90,90,90,90,90,90,120];
-const el=id=>document.getElementById(id); const clamp=(v,min,max)=>Math.max(min,Math.min(max,parseInt(v||0,10))); const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+const el=id=>document.getElementById(id);
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,parseInt(v||0,10)));
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+const getValue=(id,fallback="")=>el(id)?.value??fallback;
+const setValue=(id,value)=>{const node=el(id);if(node)node.value=value;};
+const setHtml=(id,html)=>{const node=el(id);if(node)node.innerHTML=html;};
+const on=(id,event,handler)=>{const node=el(id);if(!node){console.warn(`Elemento no encontrado: #${id}`);return false;}node.addEventListener(event,handler);return true;};
+const onClick=(id,handler)=>on(id,"click",handler);
 let port,writer,reader,rx="",poses=[],inputs=[],outputs=[],program=[],isPlaying=false,playAbort=false;
 const storageKey="tfg_robotica_v2";
-function log(line,cls="rx"){const d=document.createElement("div");d.className=cls;d.textContent=new Date().toLocaleTimeString()+"  "+line;el("log").appendChild(d);el("log").scrollTop=el("log").scrollHeight;}
-function st(t,state="warning"){el("st").textContent=t;const dot=document.querySelector(".status-dot");if(dot){dot.classList.toggle("connected",state==="connected");dot.classList.toggle("error",state==="error");}} function saveToStorage(){localStorage.setItem(storageKey,JSON.stringify({poses,inputs,outputs,program}));}
+function log(line,cls="rx"){const root=el("log");if(!root){console.log(line);return;}const d=document.createElement("div");d.className=cls;d.textContent=new Date().toLocaleTimeString()+"  "+line;root.appendChild(d);root.scrollTop=root.scrollHeight;}
+function st(t,state="warning"){const status=el("st");if(status)status.textContent=t;const dot=document.querySelector(".status-dot");if(dot){dot.classList.toggle("connected",state==="connected");dot.classList.toggle("error",state==="error");}}
+function saveToStorage(){try{localStorage.setItem(storageKey,JSON.stringify({poses,inputs,outputs,program}));}catch(e){console.warn("No se pudo guardar en localStorage",e);}}
 function loadFromStorage(){try{const d=JSON.parse(localStorage.getItem(storageKey)||"{}");poses=Array.isArray(d.poses)?d.poses:[];inputs=Array.isArray(d.inputs)?d.inputs:[];outputs=Array.isArray(d.outputs)?d.outputs:[];program=Array.isArray(d.program)?d.program:[];}catch{poses=[];inputs=[];outputs=[];program=[];}renderAll();}
 function setControlsEnabled(v){["btnHome","btnQuery","btnSave","btnPlay","btnStopPlay","btnPing","btnStatus","btnSendProg","btnRunProg","btnStopProg"].forEach(id=>{const node=el(id);if(node)node.disabled=!v;});}
 async function connect(){
@@ -274,13 +282,13 @@ async function connect(){
   if (!("serial" in navigator)){st("WebSerial no disponible. Usa Chrome/Edge desde HTTPS o localhost.","error");return;}
   const btn=el("btnConn");
   try{
-    btn.disabled=true;
+    if(btn)btn.disabled=true;
     st("Selecciona el puerto USB del ESP32...","warning");
     port=await navigator.serial.requestPort();
     await port.open({baudRate:115200});
     writer=port.writable.getWriter();
     setControlsEnabled(true);
-    btn.textContent="✅ Conectado";
+    if(btn)btn.textContent="✅ Conectado";
     st("Conectado al ESP32 a 115200.","connected");
     log("Puerto abierto","run");
     readLoop();
@@ -289,32 +297,31 @@ async function connect(){
     writer=null;
     port=null;
     setControlsEnabled(false);
-    btn.disabled=false;
-    btn.textContent="🔌 Conectar";
+    if(btn){btn.disabled=false;btn.textContent="🔌 Conectar";}
     st("No se pudo conectar: "+(e?.message||e),"error");
   }
 }
-async function readLoop(){const dec=new TextDecoderStream();port.readable.pipeTo(dec.writable).catch(()=>{});reader=dec.readable.getReader();try{while(true){const {value,done}=await reader.read();if(done)break;if(value)handleText(value);}}catch(e){log("Lectura cerrada: "+e,"err");}finally{writer=null;reader=null;setControlsEnabled(false);const btn=el("btnConn");btn.disabled=false;btn.textContent="🔌 Conectar";st("Puerto serie cerrado.","warning");}}
+async function readLoop(){const dec=new TextDecoderStream();port.readable.pipeTo(dec.writable).catch(()=>{});reader=dec.readable.getReader();try{while(true){const {value,done}=await reader.read();if(done)break;if(value)handleText(value);}}catch(e){log("Lectura cerrada: "+e,"err");}finally{writer=null;reader=null;setControlsEnabled(false);const btn=el("btnConn");if(btn){btn.disabled=false;btn.textContent="🔌 Conectar";}st("Puerto serie cerrado.","warning");}}
 function handleText(t){for(const c of t){if(c==='\r'||c==='\n')continue;if(c==='<')rx="";rx+=c;if(c==='>'){handleFrame(rx);rx="";}}}
-function handleFrame(f){let cls=f.includes("<ERR")||f.includes("ERROR")?"err":f.includes("RUN,")?"run":"rx";log(f,cls);if(f.startsWith("<T,")){const vals=f.slice(3,-1).split(',').map(Number);if(vals.length===N)vals.forEach((v,i)=>{el(`j${i}`).value=v;el(`j${i}n`).value=v;});}if(f.startsWith("<S,")){el("spd").value=el("spdN").value=clamp(f.slice(3,-1),1,180);}if(f.startsWith("<V,")){const v=f.slice(3,-1).split(',');["v1","v2","v3"].forEach((id,i)=>{el(id).value=el(id+"N").value=clamp(v[i],1,180);});}if(f.startsWith("<A,")){el("acc").value=el("accN").value=clamp(f.slice(3,-1),10,1200);}if(f.startsWith("<RUN,STEP"))st("Ejecutando "+f);if(f==="<RUN,DONE>"||f==="<RUN,STOPPED>")st(f);}
+function handleFrame(f){let cls=f.includes("<ERR")||f.includes("ERROR")?"err":f.includes("RUN,")?"run":"rx";log(f,cls);if(f.startsWith("<T,")){const vals=f.slice(3,-1).split(',').map(Number);if(vals.length===N)vals.forEach((v,i)=>{setValue(`j${i}`,v);setValue(`j${i}n`,v);});}if(f.startsWith("<S,")){const v=clamp(f.slice(3,-1),1,180);setValue("spd",v);setValue("spdN",v);}if(f.startsWith("<V,")){const v=f.slice(3,-1).split(',');["v1","v2","v3"].forEach((id,i)=>{const n=clamp(v[i],1,180);setValue(id,n);setValue(id+"N",n);});}if(f.startsWith("<A,")){const v=clamp(f.slice(3,-1),10,1200);setValue("acc",v);setValue("accN",v);}if(f.startsWith("<RUN,STEP"))st("Ejecutando "+f);if(f==="<RUN,DONE>"||f==="<RUN,STOPPED>")st(f);}
 async function sendLine(line){if(!writer){st("No conectado.","error");return;}await writer.write(new TextEncoder().encode(line+"\n"));log(line,"tx");}
-function buildJoints(){const root=el("joints");root.innerHTML="";names.forEach((n,i)=>{const r=document.createElement("div");r.className="row";r.innerHTML=`<div class="joint-label">
+function buildJoints(){const root=el("joints");if(!root){console.warn("Elemento no encontrado: #joints");return;}root.innerHTML="";names.forEach((n,i)=>{const r=document.createElement("div");r.className="row";r.innerHTML=`<div class="joint-label">
 <span class="joint-index">${n}</span>
 <b>${i===6?'Pinza':'Articulación'}</b>
 </div>
 <input id="j${i}" type="range" min="${mins[i]}" max="${maxs[i]}" value="${home[i]}">
-<input id="j${i}n" type="number" min="${mins[i]}" max="${maxs[i]}" value="${home[i]}">`;root.appendChild(r);el(`j${i}`).addEventListener("input",()=>{el(`j${i}n`).value=el(`j${i}`).value;queueSendPose();});el(`j${i}n`).addEventListener("input",()=>{el(`j${i}`).value=clamp(el(`j${i}n`).value,mins[i],maxs[i]);queueSendPose();});});}
-let poseTimer,spdTimer,vTimer,accTimer;function queueSendPose(){if(!writer||isPlaying)return;clearTimeout(poseTimer);poseTimer=setTimeout(()=>sendPose(),40);}function queueSendSpeed(){if(!writer)return;clearTimeout(spdTimer);spdTimer=setTimeout(sendSpeed,120);}function queueSendV(){if(!writer)return;clearTimeout(vTimer);vTimer=setTimeout(sendV,120);}function queueSendAccel(){if(!writer)return;clearTimeout(accTimer);accTimer=setTimeout(sendAccel,120);}function currentVals(){return Array.from({length:N},(_,i)=>clamp(el(`j${i}`).value,mins[i],maxs[i]));}async function sendPose(vals=currentVals()){await sendLine(`<P,${vals.join(",")}>`);}async function sendSpeed(){await sendLine(`<S,${clamp(el("spd").value,1,180)}>`);}async function sendV(){await sendLine(`<V,${clamp(el("v1").value,1,180)},${clamp(el("v2").value,1,180)},${clamp(el("v3").value,1,180)}>`);}async function sendAccel(){await sendLine(`<A,${clamp(el("acc").value,10,1200)}>`);}
-function hookRanges(){[["spd","spdN",1,180,queueSendSpeed],["v1","v1N",1,180,queueSendV],["v2","v2N",1,180,queueSendV],["v3","v3N",1,180,queueSendV],["acc","accN",10,1200,queueSendAccel],["delay","delayN",100,5000,()=>{}]].forEach(([a,b,min,max,cb])=>{el(a).addEventListener("input",()=>{el(b).value=el(a).value;cb();});el(b).addEventListener("input",()=>{el(a).value=clamp(el(b).value,min,max);cb();});});}
-function renderPoseList(){el("poseList").innerHTML=poses.map((p,i)=>`<option value="${i}">${i+1}. ${esc(p.name)} [${p.vals.join(', ')}]</option>`).join("");}
-function renderIO(){el("inputsList").innerHTML=inputs.map((x,i)=>`<div class="io-card">
+<input id="j${i}n" type="number" min="${mins[i]}" max="${maxs[i]}" value="${home[i]}">`;root.appendChild(r);on(`j${i}`,"input",()=>{setValue(`j${i}n`,getValue(`j${i}`,home[i]));queueSendPose();});on(`j${i}n`,"input",()=>{setValue(`j${i}`,clamp(getValue(`j${i}n`,home[i]),mins[i],maxs[i]));queueSendPose();});});}
+let poseTimer,spdTimer,vTimer,accTimer;function queueSendPose(){if(!writer||isPlaying)return;clearTimeout(poseTimer);poseTimer=setTimeout(()=>sendPose(),40);}function queueSendSpeed(){if(!writer)return;clearTimeout(spdTimer);spdTimer=setTimeout(sendSpeed,120);}function queueSendV(){if(!writer)return;clearTimeout(vTimer);vTimer=setTimeout(sendV,120);}function queueSendAccel(){if(!writer)return;clearTimeout(accTimer);accTimer=setTimeout(sendAccel,120);}function currentVals(){return Array.from({length:N},(_,i)=>clamp(getValue(`j${i}`,home[i]),mins[i],maxs[i]));}async function sendPose(vals=currentVals()){await sendLine(`<P,${vals.join(",")}>`);}async function sendSpeed(){await sendLine(`<S,${clamp(getValue("spd",60),1,180)}>`);}async function sendV(){await sendLine(`<V,${clamp(getValue("v1",60),1,180)},${clamp(getValue("v2",60),1,180)},${clamp(getValue("v3",60),1,180)}>`);}async function sendAccel(){await sendLine(`<A,${clamp(getValue("acc",300),10,1200)}>`);}
+function hookRanges(){[["spd","spdN",1,180,queueSendSpeed],["v1","v1N",1,180,queueSendV],["v2","v2N",1,180,queueSendV],["v3","v3N",1,180,queueSendV],["acc","accN",10,1200,queueSendAccel],["delay","delayN",100,5000,()=>{}]].forEach(([a,b,min,max,cb])=>{const range=el(a),num=el(b);if(!range||!num){console.warn(`Rango incompleto: #${a}/#${b}`);return;}range.addEventListener("input",()=>{num.value=range.value;cb();});num.addEventListener("input",()=>{range.value=clamp(num.value,min,max);cb();});});}
+function renderPoseList(){setHtml("poseList",poses.map((p,i)=>`<option value="${i}">${i+1}. ${esc(p.name)} [${p.vals.join(', ')}]</option>`).join(""));}
+function renderIO(){setHtml("inputsList",inputs.map((x,i)=>`<div class="io-card">
 <b>${esc(x.name)} · GPIO ${x.pin}</b>
 <span class="small">${x.mode}, activo ${x.activeState}</span>
 <div class="button-row">
 <button onclick="readInput(${i})">Leer</button>
 <button class="btn-danger" onclick="removeInput(${i})">Eliminar</button>
 </div>
-</div>`).join("");el("outputsList").innerHTML=outputs.map((x,i)=>`<div class="io-card">
+</div>`).join(""));setHtml("outputsList",outputs.map((x,i)=>`<div class="io-card">
 <b>${esc(x.name)} · GPIO ${x.pin}</b>
 <span class="small">Estado inicial ${x.initialState?'ON':'OFF'} · actual ${x.value?'ON':'OFF'}</span>
 <div class="button-row">
@@ -322,17 +329,17 @@ function renderIO(){el("inputsList").innerHTML=inputs.map((x,i)=>`<div class="io
 <button onclick="setOutput(${i},0)">OFF</button>
 <button class="btn-danger" onclick="removeOutput(${i})">Eliminar</button>
 </div>
-</div>`).join("");}
+</div>`).join(""));}
 function renderSelectors(){return {inOpts:inputs.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join(""),outOpts:outputs.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join(""),poseOpts:poses.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")};}
 function optionList(items,current){return items.map(x=>`<option value="${esc(x.id)}" ${x.id===current?"selected":""}>${esc(x.name)}</option>`).join("");}
-function renderProgram(){const {inOpts,outOpts,poseOpts}=renderSelectors();el("programList").innerHTML=program.map((s,i)=>`<div class="step-card">
+function renderProgram(){const {inOpts,outOpts,poseOpts}=renderSelectors();setHtml("programList",program.map((s,i)=>`<div class="step-card">
 <div class="step-tools">
 <b>#${i+1} ${s.type}</b>
 <button onclick="moveStep(${i},-1)">↑</button>
 <button onclick="moveStep(${i},1)">↓</button>
 <button onclick="dupStep(${i})">Duplicar</button>
 <button class="btn-danger" onclick="delStep(${i})">Borrar</button>
-</div>${stepEditor(s,i,inOpts,outOpts,poseOpts)}</div>`).join("");}
+</div>${stepEditor(s,i,inOpts,outOpts,poseOpts)}</div>`).join(""));}
 function stepEditor(s,i,inOpts,outOpts,poseOpts){if(s.type==="POSE")return `<div class="field-grid">
 <select onchange="applyPoseRef(${i},this.value)">
 <option value="">Usar valores editados</option>${poseOpts}</select>${names.map((n,j)=>`<input type="number" min="${mins[j]}" max="${maxs[j]}" value="${s.vals[j]}" onchange="program[${i}].vals[${j}]=clamp(this.value,${mins[j]},${maxs[j]});saveToStorage()" title="${n}">`).join("")}<input type="number" value="${s.delayMs||0}" onchange="program[${i}].delayMs=clamp(this.value,0,600000);saveToStorage()" title="Delay ms">
@@ -353,18 +360,55 @@ function stepEditor(s,i,inOpts,outOpts,poseOpts){if(s.type==="POSE")return `<div
 </div>`;return `<span class="small">Envia &lt;H&gt; al Arduino a través del ESP32.</span>`;}
 function renderAll(){renderPoseList();renderIO();renderProgram();}
 function safeId(prefix){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
-function addInput(){const pin=Number(el("inPin").value),name=el("inName").value.trim()||`Entrada ${inputs.length+1}`;if(!Number.isInteger(pin)){st("Indica un GPIO válido para la entrada.","error");return;}inputs.push({id:safeId("in"),name,pin,mode:el("inMode").value,activeState:el("inActive").value});saveToStorage();renderAll();sendIoConfig();el("inName").value="";el("inPin").value="";}
-function addOutput(){const pin=Number(el("outPin").value),name=el("outName").value.trim()||`Salida ${outputs.length+1}`,initialState=Number(el("outInitial").value);if(!Number.isInteger(pin)){st("Indica un GPIO válido para la salida.","error");return;}outputs.push({id:safeId("out"),name,pin,initialState,value:initialState});saveToStorage();renderAll();sendIoConfig();el("outName").value="";el("outPin").value="";}
-async function sendIoConfig(){if(!writer)return;await sendLine("<IN,CLEAR>");for(const x of inputs)await sendLine(`<IN,ADD,${x.id},${x.pin},${x.mode},${x.activeState}>`);await sendLine("<OUT,CLEAR>");for(const x of outputs)await sendLine(`<OUT,ADD,${x.id},${x.pin},${x.initialState?1:0}>`);}function readInput(i){sendLine(`<IN,READ,${inputs[i].id}>`);}function removeInput(i){const id=inputs[i].id;inputs.splice(i,1);saveToStorage();renderAll();sendLine(`<IN,REMOVE,${id}>`);}function setOutput(i,v){outputs[i].value=v;saveToStorage();renderAll();sendLine(`<OUT,SET,${outputs[i].id},${v}>`);}function removeOutput(i){const id=outputs[i].id;outputs.splice(i,1);saveToStorage();renderAll();sendLine(`<OUT,REMOVE,${id}>`);}
-function addStep(){const t=el("stepType").value;let s={type:t};if(t==="POSE")s={type:t,source:"current",vals:currentVals(),delayMs:0};if(t==="OUT")s={type:t,id:outputs[0]?.id||"",value:1};if(t==="WAIT_IN")s={type:t,id:inputs[0]?.id||"",state:"ACTIVE",timeoutMs:5000};if(t==="PAUSE")s={type:t,durationMs:1000};if(t==="SPEED")s={type:t,s:clamp(el("spd").value,1,180),v1:clamp(el("v1").value,1,180),v2:clamp(el("v2").value,1,180),v3:clamp(el("v3").value,1,180),a:clamp(el("acc").value,10,1200)};program.push(s);saveToStorage();renderProgram();}
+function addInput(){const pin=Number(getValue("inPin")),name=String(getValue("inName")).trim()||`Entrada ${inputs.length+1}`;if(!Number.isInteger(pin)){st("Indica un GPIO válido para la entrada.","error");return;}inputs.push({id:safeId("in"),name,pin,mode:getValue("inMode","INPUT"),activeState:getValue("inActive","HIGH")});saveToStorage();renderAll();sendIoConfig();setValue("inName","");setValue("inPin","");}
+function addOutput(){const pin=Number(getValue("outPin")),name=String(getValue("outName")).trim()||`Salida ${outputs.length+1}`;let initialState;initialState=Number(getValue("outInitial",0));if(!Number.isInteger(pin)){st("Indica un GPIO válido para la salida.","error");return;}outputs.push({id:safeId("out"),name,pin,initialState,value:initialState});saveToStorage();renderAll();sendIoConfig();setValue("outName","");setValue("outPin","");}
+async function sendIoConfig(){if(!writer)return;await sendLine("<IN,CLEAR>");for(const x of inputs)await sendLine(`<IN,ADD,${x.id},${x.pin},${x.mode},${x.activeState}>`);await sendLine("<OUT,CLEAR>");for(const x of outputs)await sendLine(`<OUT,ADD,${x.id},${x.pin},${x.initialState?1:0}>`);}function readInput(i){if(inputs[i])sendLine(`<IN,READ,${inputs[i].id}>`);}function removeInput(i){if(!inputs[i])return;const id=inputs[i].id;inputs.splice(i,1);saveToStorage();renderAll();sendLine(`<IN,REMOVE,${id}>`);}function setOutput(i,v){if(!outputs[i])return;outputs[i].value=v;saveToStorage();renderAll();sendLine(`<OUT,SET,${outputs[i].id},${v}>`);}function removeOutput(i){if(!outputs[i])return;const id=outputs[i].id;outputs.splice(i,1);saveToStorage();renderAll();sendLine(`<OUT,REMOVE,${id}>`);}
+function addStep(){const t=getValue("stepType","POSE");let s={type:t};if(t==="POSE")s={type:t,source:"current",vals:currentVals(),delayMs:0};if(t==="OUT")s={type:t,id:outputs[0]?.id||"",value:1};if(t==="WAIT_IN")s={type:t,id:inputs[0]?.id||"",state:"ACTIVE",timeoutMs:5000};if(t==="PAUSE")s={type:t,durationMs:1000};if(t==="SPEED")s={type:t,s:clamp(getValue("spd",60),1,180),v1:clamp(getValue("v1",60),1,180),v2:clamp(getValue("v2",60),1,180),v3:clamp(getValue("v3",60),1,180),a:clamp(getValue("acc",300),10,1200)};program.push(s);saveToStorage();renderProgram();}
 function delStep(i){program.splice(i,1);saveToStorage();renderProgram();}function dupStep(i){program.splice(i+1,0,JSON.parse(JSON.stringify(program[i])));saveToStorage();renderProgram();}function moveStep(i,d){const j=i+d;if(j<0||j>=program.length)return;[program[i],program[j]]=[program[j],program[i]];saveToStorage();renderProgram();}function applyPoseRef(i,v){const pose=poses[Number(v)];if(v!==""&&pose){program[i].source="saved";program[i].poseIndex=Number(v);program[i].vals=[...pose.vals];saveToStorage();renderProgram();}}
 function validateProgram(show=true){const errs=[];program.forEach((s,i)=>{if(s.type==="POSE"&&(!Array.isArray(s.vals)||s.vals.length!==N))errs.push(`#${i+1} pose inválida`);if(s.type==="OUT"&&!outputs.some(o=>o.id===s.id))errs.push(`#${i+1} salida no configurada`);if(s.type==="WAIT_IN"&&!inputs.some(x=>x.id===s.id))errs.push(`#${i+1} entrada no configurada`);});if(show)st(errs.length?"Errores: "+errs.join("; "):"Programa válido.");return errs;}
 async function sendProgram(){if(validateProgram(false).length){st("Corrige errores antes de enviar.");return;}await sendIoConfig();await sendLine("<PROG,CLEAR>");for(const s of program){if(s.type==="POSE")await sendLine(`<PROG,ADD,POSE,${s.vals.map((v,i)=>clamp(v,mins[i],maxs[i])).join(',')},${clamp(s.delayMs||0,0,600000)}>`);if(s.type==="OUT")await sendLine(`<PROG,ADD,OUT,${s.id},${s.value?1:0}>`);if(s.type==="WAIT_IN")await sendLine(`<PROG,ADD,WAIT_IN,${s.id},${s.state},${clamp(s.timeoutMs||0,0,600000)}>`);if(s.type==="PAUSE")await sendLine(`<PROG,ADD,PAUSE,${clamp(s.durationMs||0,0,600000)}>`);if(s.type==="SPEED")await sendLine(`<PROG,ADD,SPEED,${clamp(s.s,1,180)},${clamp(s.v1,1,180)},${clamp(s.v2,1,180)},${clamp(s.v3,1,180)},${clamp(s.a,10,1200)}>`);if(s.type==="HOME")await sendLine("<PROG,ADD,HOME>");}st("Programa enviado al ESP32.");}
-function exportProgram(){el("progJson").value=JSON.stringify({inputs,outputs,program},null,2);}function importProgram(){try{const d=JSON.parse(el("progJson").value);if(Array.isArray(d.inputs))inputs=d.inputs;if(Array.isArray(d.outputs))outputs=d.outputs;if(Array.isArray(d.program))program=d.program;saveToStorage();renderAll();st("Programa JSON importado.");}catch{st("JSON inválido.");}}
-function savePose(){poses.push({name:`Pose ${poses.length+1}`,vals:currentVals()});saveToStorage();renderAll();}function deleteSelectedPose(){const i=el("poseList").selectedIndex;if(i>=0){poses.splice(i,1);saveToStorage();renderAll();}}function clearPoses(){poses=[];saveToStorage();renderAll();}function exportPoses(){el("io").value=JSON.stringify(poses,null,2);}function importPoses(){try{const d=JSON.parse(el("io").value);if(!Array.isArray(d))throw 0;poses=d.filter(p=>Array.isArray(p.vals)&&p.vals.length===N).map((p,i)=>({name:String(p.name||`Pose ${i+1}`),vals:p.vals.map((v,j)=>clamp(v,mins[j],maxs[j]))}));saveToStorage();renderAll();}catch{st("Import: JSON inválido.");}}
-const delayMs=ms=>new Promise(r=>setTimeout(r,ms));async function playPoses(){if(!writer||!poses.length)return;isPlaying=true;playAbort=false;el("btnPlay").disabled=true;await sendSpeed();await sendV();await sendAccel();do{for(const p of poses){if(playAbort)break;await sendPose(p.vals);await delayMs(clamp(el("delay").value,100,5000));}}while(el("loop").checked&&!playAbort);isPlaying=false;playAbort=false;el("btnPlay").disabled=false;}function stopPlay(){playAbort=true;st("Reproducción local parada.");}
-el("btnConn").onclick=()=>connect().catch(e=>st("Error: "+e));el("btnPing").onclick=()=>sendLine("<PING>");el("btnStatus").onclick=()=>sendLine("<STATUS>");el("btnHome").onclick=()=>sendLine("<H>");el("btnQuery").onclick=()=>sendLine("<Q>");el("btnSave").onclick=savePose;el("btnDelete").onclick=deleteSelectedPose;el("btnClear").onclick=clearPoses;el("btnPlay").onclick=playPoses;el("btnStopPlay").onclick=stopPlay;el("btnExport").onclick=exportPoses;el("btnImport").onclick=importPoses;el("poseList").onchange=()=>{const i=el("poseList").selectedIndex;if(i>=0)poses[i].vals.forEach((v,j)=>{el(`j${j}`).value=el(`j${j}n`).value=v;});};el("btnAddIn").onclick=addInput;el("btnAddOut").onclick=addOutput;el("btnClearIn").onclick=()=>{inputs=[];saveToStorage();renderAll();sendLine("<IN,CLEAR>");};el("btnClearOut").onclick=()=>{outputs=[];saveToStorage();renderAll();sendLine("<OUT,CLEAR>");};el("btnAddStep").onclick=addStep;el("btnClearProg").onclick=()=>{program=[];saveToStorage();renderProgram();};el("btnValidate").onclick=()=>validateProgram();el("btnExportProg").onclick=exportProgram;el("btnImportProg").onclick=importProgram;el("btnSendProg").onclick=sendProgram;el("btnRunProg").onclick=()=>sendLine("<PROG,RUN>");el("btnStopProg").onclick=()=>sendLine("<PROG,STOP>");el("btnClearLog").onclick=()=>el("log").innerHTML="";
-buildJoints();hookRanges();loadFromStorage();setControlsEnabled(false);
+function exportProgram(){setValue("progJson",JSON.stringify({inputs,outputs,program},null,2));}function importProgram(){try{const d=JSON.parse(getValue("progJson",""));if(Array.isArray(d.inputs))inputs=d.inputs;if(Array.isArray(d.outputs))outputs=d.outputs;if(Array.isArray(d.program))program=d.program;saveToStorage();renderAll();st("Programa JSON importado.");}catch{st("JSON inválido.");}}
+function savePose(){poses.push({name:`Pose ${poses.length+1}`,vals:currentVals()});saveToStorage();renderAll();}function deleteSelectedPose(){const list=el("poseList");const i=list?list.selectedIndex:-1;if(i>=0){poses.splice(i,1);saveToStorage();renderAll();}}function clearPoses(){poses=[];saveToStorage();renderAll();}function exportPoses(){setValue("io",JSON.stringify(poses,null,2));}function importPoses(){try{const d=JSON.parse(getValue("io",""));if(!Array.isArray(d))throw 0;poses=d.filter(p=>Array.isArray(p.vals)&&p.vals.length===N).map((p,i)=>({name:String(p.name||`Pose ${i+1}`),vals:p.vals.map((v,j)=>clamp(v,mins[j],maxs[j]))}));saveToStorage();renderAll();}catch{st("Import: JSON inválido.");}}
+const delayMs=ms=>new Promise(r=>setTimeout(r,ms));async function playPoses(){if(!writer||!poses.length)return;isPlaying=true;playAbort=false;const btn=el("btnPlay");if(btn)btn.disabled=true;await sendSpeed();await sendV();await sendAccel();do{for(const p of poses){if(playAbort)break;await sendPose(p.vals);await delayMs(clamp(getValue("delay",1000),100,5000));}}while(el("loop")?.checked&&!playAbort);isPlaying=false;playAbort=false;if(btn)btn.disabled=false;}function stopPlay(){playAbort=true;st("Reproducción local parada.");}
+function hookButtonEvents(){
+  onClick("btnConn",()=>connect().catch(e=>st("Error: "+e)));
+  onClick("btnPing",()=>sendLine("<PING>"));
+  onClick("btnStatus",()=>sendLine("<STATUS>"));
+  onClick("btnHome",()=>sendLine("<H>"));
+  onClick("btnQuery",()=>sendLine("<Q>"));
+  onClick("btnSave",savePose);
+  onClick("btnDelete",deleteSelectedPose);
+  onClick("btnClear",clearPoses);
+  onClick("btnPlay",playPoses);
+  onClick("btnStopPlay",stopPlay);
+  onClick("btnExport",exportPoses);
+  onClick("btnImport",importPoses);
+  on("poseList","change",()=>{const list=el("poseList");const i=list?list.selectedIndex:-1;if(i>=0&&poses[i])poses[i].vals.forEach((v,j)=>{setValue(`j${j}`,v);setValue(`j${j}n`,v);});});
+  onClick("btnAddIn",addInput);
+  onClick("btnAddOut",addOutput);
+  onClick("btnClearIn",()=>{inputs=[];saveToStorage();renderAll();sendLine("<IN,CLEAR>");});
+  onClick("btnClearOut",()=>{outputs=[];saveToStorage();renderAll();sendLine("<OUT,CLEAR>");});
+  onClick("btnAddStep",addStep);
+  onClick("btnClearProg",()=>{program=[];saveToStorage();renderProgram();});
+  onClick("btnValidate",()=>validateProgram());
+  onClick("btnExportProg",exportProgram);
+  onClick("btnImportProg",importProgram);
+  onClick("btnSendProg",sendProgram);
+  onClick("btnRunProg",()=>sendLine("<PROG,RUN>"));
+  onClick("btnStopProg",()=>sendLine("<PROG,STOP>"));
+  onClick("btnClearLog",()=>setHtml("log",""));
+  console.log("Eventos de botones asignados");
+}
+function init(){
+  console.log("JS cargado correctamente");
+  console.log(("serial" in navigator)?"WebSerial disponible":"WebSerial no disponible");
+  buildJoints();
+  hookRanges();
+  loadFromStorage();
+  setControlsEnabled(false);
+  hookButtonEvents();
+}
+init();
 </script>
 </body>
 </html>
