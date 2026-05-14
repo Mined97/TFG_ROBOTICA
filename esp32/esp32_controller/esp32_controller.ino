@@ -37,7 +37,9 @@ enum StepType {
   STEP_WAIT_IN,
   STEP_PAUSE,
   STEP_SPEED,
-  STEP_HOME
+  STEP_HOME,
+  STEP_IF_INPUTS,
+  STEP_JUMP
 };
 
 struct ProgramStep {
@@ -54,6 +56,10 @@ struct ProgramStep {
   int v2;
   int v3;
   int accel;
+  String id2;
+  int targetBoth;
+  int targetOne;
+  int targetElse;
 };
 
 DigitalInputCfg inputs[MAX_INPUTS];
@@ -62,6 +68,7 @@ ProgramStep programSteps[MAX_STEPS];
 byte programCount = 0;
 
 bool running = false;
+bool programLoop = false;
 byte currentStep = 0;
 bool stepActive = false;
 unsigned long stepStartMs = 0;
@@ -90,6 +97,10 @@ String stepTypeName(StepType type) {
     return "SPEED";
   case STEP_HOME:
     return "HOME";
+  case STEP_IF_INPUTS:
+    return "IF_INPUTS";
+  case STEP_JUMP:
+    return "JUMP";
   default:
     return "NONE";
   }
@@ -227,6 +238,7 @@ void clearProgram() {
   running = false;
   stepActive = false;
   programCount = 0;
+  programLoop = false;
   Serial.println("<PROG,LOADED,0>");
 }
 
@@ -257,18 +269,52 @@ void sendProgramStatus() {
   Serial.print(programCount);
   Serial.print(",running=");
   Serial.print(running ? 1 : 0);
+  Serial.print(",loop=");
+  Serial.print(programLoop ? 1 : 0);
   Serial.print(",step=");
   Serial.print(currentStep);
   Serial.println('>');
 }
 
-void finishCurrentStep() {
+void finishProgramCycle() {
   stepActive = false;
-  currentStep++;
-  if (currentStep >= programCount) {
+  if (programLoop) {
+    currentStep = 0;
+    Serial.println("<RUN,LOOP>");
+  } else {
     running = false;
     Serial.println("<RUN,DONE>");
   }
+}
+
+void finishCurrentStep() {
+  stepActive = false;
+  currentStep++;
+  if (currentStep >= programCount)
+    finishProgramCycle();
+}
+
+bool jumpToStep(int targetOneBased) {
+  if (targetOneBased < 1 || targetOneBased > programCount) {
+    running = false;
+    Serial.println("<RUN,ERROR,SALTO_INVALIDO>");
+    return false;
+  }
+  currentStep = targetOneBased - 1;
+  stepActive = false;
+  return true;
+}
+
+int inputIsActive(const String &id, bool *ok) {
+  int idx = findInput(id);
+  if (idx < 0) {
+    *ok = false;
+    return 0;
+  }
+  int value = readInputValue(idx);
+  reportInput(idx);
+  *ok = true;
+  return value == inputs[idx].activeState ? 1 : 0;
 }
 
 void startProgram() {
@@ -337,6 +383,23 @@ void beginStep(ProgramStep &step) {
   } else if (step.type == STEP_HOME) {
     sendToArduino("<H>");
     finishCurrentStep();
+  } else if (step.type == STEP_IF_INPUTS) {
+    bool ok1 = false, ok2 = false;
+    int active1 = inputIsActive(step.id, &ok1);
+    int active2 = inputIsActive(step.id2, &ok2);
+    if (!ok1 || !ok2) {
+      running = false;
+      Serial.println("<RUN,ERROR,ENTRADA_NO_ENCONTRADA>");
+      return;
+    }
+    int target = (active1 && active2) ? step.targetBoth
+                 : ((active1 || active2) ? step.targetOne : step.targetElse);
+    if (target <= 0)
+      finishCurrentStep();
+    else
+      jumpToStep(target);
+  } else if (step.type == STEP_JUMP) {
+    jumpToStep(step.targetBoth);
   }
 }
 
@@ -344,8 +407,7 @@ void serviceProgram() {
   if (!running)
     return;
   if (currentStep >= programCount) {
-    running = false;
-    Serial.println("<RUN,DONE>");
+    finishProgramCycle();
     return;
   }
 
@@ -381,10 +443,10 @@ void serviceProgram() {
 void handleEsp32Command(String frame) {
   frame.trim();
   String body = frame.substring(1, frame.length() - 1);
-  char buffer[192];
+  char buffer[256];
   body.toCharArray(buffer, sizeof(buffer));
-  char *parts[16];
-  byte count = splitCsv(buffer, parts, 16);
+  char *parts[24];
+  byte count = splitCsv(buffer, parts, 24);
   if (count == 0) {
     sendErr("COMANDO_VACIO");
     return;
@@ -404,6 +466,8 @@ void handleEsp32Command(String frame) {
     Serial.print(programCount);
     Serial.print(",running=");
     Serial.print(running ? 1 : 0);
+    Serial.print(",loop=");
+    Serial.print(programLoop ? 1 : 0);
     Serial.println('>');
   } else if (cmd == "IN") {
     String action = count > 1 ? String(parts[1]) : "";
@@ -562,6 +626,21 @@ void handleEsp32Command(String frame) {
       startProgram();
     else if (action == "STOP")
       stopProgram();
+    else if (action == "LOOP") {
+      if (count != 3) {
+        sendErr("PROG_LOOP_PARAMETROS");
+        return;
+      }
+      bool loopOk = false;
+      programLoop = parseBoolState(parts[2], &loopOk) == HIGH;
+      if (!loopOk) {
+        sendErr("PROG_LOOP_VALOR_INVALIDO");
+        return;
+      }
+      Serial.print("<PROG,LOOP,");
+      Serial.print(programLoop ? 1 : 0);
+      Serial.println('>');
+    }
     else if (action == "STATUS")
       sendProgramStatus();
     else if (action == "ADD") {
@@ -586,6 +665,10 @@ void handleEsp32Command(String frame) {
       step.v2 = 0;
       step.v3 = 0;
       step.accel = 0;
+      step.id2 = "";
+      step.targetBoth = -1;
+      step.targetOne = -1;
+      step.targetElse = -1;
       if (type == "POSE") {
         if (count != 11) {
           sendErr("PROG_POSE_PARAMETROS");
@@ -651,6 +734,24 @@ void handleEsp32Command(String frame) {
           return;
         }
         step.type = STEP_HOME;
+      } else if (type == "IF_INPUTS") {
+        if (count != 8) {
+          sendErr("PROG_IF_INPUTS_PARAMETROS");
+          return;
+        }
+        step.type = STEP_IF_INPUTS;
+        step.id = parts[3];
+        step.id2 = parts[4];
+        step.targetBoth = atoi(parts[5]);
+        step.targetOne = atoi(parts[6]);
+        step.targetElse = atoi(parts[7]);
+      } else if (type == "JUMP") {
+        if (count != 4) {
+          sendErr("PROG_JUMP_PARAMETROS");
+          return;
+        }
+        step.type = STEP_JUMP;
+        step.targetBoth = atoi(parts[3]);
       } else {
         sendErr("PROG_TIPO_DESCONOCIDO");
         return;
@@ -685,7 +786,7 @@ void readFrames(Stream &stream, String &buffer, bool fromUsb) {
         forwardArduinoFrame(buffer);
       buffer = "";
     }
-    if (buffer.length() > 190) {
+    if (buffer.length() > 250) {
       buffer = "";
       if (fromUsb)
         sendErr("TRAMA_USB_DEMASIADO_LARGA");

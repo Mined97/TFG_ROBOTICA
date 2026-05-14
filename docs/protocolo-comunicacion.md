@@ -28,12 +28,15 @@ Todas las tramas usan el formato `<...>` y se transmiten a **115200 baudios**.
 ### Programa del ESP32
 
 - `<PROG,CLEAR>`
+- `<PROG,LOOP,value>`: activa (`1`) o desactiva (`0`) que el programa vuelva al paso 1 al finalizar.
 - `<PROG,ADD,POSE,j1,j2,j3,j4,j5,j6,pinza,delayMs>`
 - `<PROG,ADD,OUT,id,value>`
 - `<PROG,ADD,WAIT_IN,id,state,timeoutMs>`
 - `<PROG,ADD,PAUSE,durationMs>`
 - `<PROG,ADD,SPEED,s,v1,v2,v3,a>`
 - `<PROG,ADD,HOME>`
+- `<PROG,ADD,IF_INPUTS,id1,id2,targetBoth,targetOne,targetElse>`: evalúa dos entradas; si las dos están activas salta a `targetBoth`, si solo una está activa salta a `targetOne`, y si ninguna está activa salta a `targetElse`. Los destinos son pasos empezando en 1; `0` significa continuar con el siguiente paso.
+- `<PROG,ADD,JUMP,target>`: salta incondicionalmente al paso `target`, empezando en 1.
 - `<PROG,RUN>`
 - `<PROG,STOP>`
 - `<PROG,STATUS>`
@@ -57,9 +60,11 @@ El ESP32 distingue sus propios comandos y reenvía al Arduino solo los comandos 
 - `<IN,STATE,id,value,active>`
 - `<OUT,STATE,id,value>`
 - `<PROG,LOADED,totalSteps>`
+- `<PROG,LOOP,value>`
 - `<RUN,START,totalSteps>`
 - `<RUN,STEP,index,total,type>`
 - `<RUN,DONE>`
+- `<RUN,LOOP>`
 - `<RUN,STOPPED>`
 - `<RUN,ERROR,mensaje>`
 - `<ESP32,TX_ARDUINO,...>`
