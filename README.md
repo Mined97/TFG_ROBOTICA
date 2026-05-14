@@ -95,10 +95,13 @@ No se usa WiFi, Bluetooth, React, Vite, Node ni frameworks web.
    - `Pausa` para retardos temporales.
    - `Velocidad` para enviar `<S>`, `<V>` y `<A>` al Arduino.
    - `Home` para enviar `<H>`.
-3. Pulsa **Validar**.
-4. Pulsa **Enviar al ESP32**.
-5. Pulsa **Ejecutar**.
-6. Puedes detener con **Detener**, que envía `<PROG,STOP>`.
+   - `Condición 2 entradas` para crear dos ramas: por ejemplo, si dos sensores están activos ir a una pose, si solo uno está activo ir a otra, y si ninguno está activo continuar o volver a comprobar.
+   - `Salto` para unir ramas o volver a un punto anterior del programa.
+3. Si quieres ejecución continua, marca **Ejecutar en bucle** en el editor; el ESP32 reiniciará el programa desde el paso 1 al terminar.
+4. Pulsa **Validar**.
+5. Pulsa **Enviar al ESP32**.
+6. Pulsa **Ejecutar**.
+7. Puedes detener con **Detener**, que envía `<PROG,STOP>`.
 
 También puedes importar `examples/programa_demo.json` desde el área JSON del editor.
 
