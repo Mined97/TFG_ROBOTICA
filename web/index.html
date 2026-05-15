@@ -61,7 +61,7 @@
 </div>
 <div class="metric">
 <span>UART ESP32</span>
-<b>RX16 / TX17 · 115200</b>
+<b>TX17 · 115200 · sin RX Arduino</b>
 </div>
 </aside>
 </section>
@@ -178,7 +178,7 @@
 <div class="card-header">
 <div>
 <h2>Configuración de entradas y salidas</h2>
-<div class="subtitle">El ESP32 valida pines y gestiona hasta 16 entradas y 16 salidas. No uses GPIO 1,3,6-11,16,17; 34,35,36,39 son solo entrada.</div>
+<div class="subtitle">El ESP32 valida pines y gestiona hasta 16 entradas y 16 salidas. No uses GPIO 1,3,6-11,17; 34,35,36,39 son solo entrada. GPIO16 queda libre si no cableas RX desde Arduino.</div>
 </div>
 </div>
 <div class="grid2">
@@ -278,7 +278,7 @@
 <div class="card-header">
 <div>
 <h2>Monitor serie</h2>
-<div class="subtitle">Comandos enviados, respuestas ESP32/Arduino, errores y paso actual.</div>
+<div class="subtitle">Comandos enviados, respuestas del ESP32, errores y paso actual.</div>
 </div>
 </div>
 <div class="button-row">
@@ -290,8 +290,8 @@
 </div>
 <div class="card">
 <h2>Notas de conexión</h2>
-<div class="hint">⚠️ Arduino UNO usa lógica de 5 V y ESP32 3,3 V. Protege RX del ESP32 con adaptador de nivel o divisor resistivo.</div>
-<div class="hint">🔌 UART entre placas: TX ESP32 GPIO17 → RX Arduino, TX Arduino → RX ESP32 GPIO16, y GND común.</div>
+<div class="hint">⚠️ Arquitectura sin retorno Arduino → ESP32: no conectes TX Arduino al ESP32 para esta versión.</div>
+<div class="hint">🔌 UART entre placas: TX ESP32 GPIO17 → RX Arduino y GND común. El ESP32 solo transmite comandos de movimiento.</div>
 </div>
 </aside>
 </section>
@@ -307,7 +307,7 @@ const setHtml=(id,html)=>{const node=el(id);if(node)node.innerHTML=html;};
 const on=(id,event,handler)=>{const node=el(id);if(!node){console.warn(`Elemento no encontrado: #${id}`);return false;}node.addEventListener(event,handler);return true;};
 const onClick=(id,handler)=>on(id,"click",handler);
 let port,writer,reader,rx="",poses=[],inputs=[],outputs=[],program=[],programLoop=false,isProgramBusy=false,selectedPoseIndex=-1;
-let runningProgram=false,activeStepIndex=null,completedSteps=new Set(),errorStepIndex=null,lastInputStates={},lastOutputStates={},inputCfgStates={},ioReadTimer=null,ioRenderTimer=null,runRenderTimer=null,runStartWatchdogTimer=null,runActivityWatchdogTimer=null,lastEsp32FrameAt=0,lastRunFrameAt=0,lastInputStateFrameAt=0,lastInputLogCache={},lastInputLogAt={},pendingProgStatus=null,pendingLoadErrors=null,inputDiagVisible=false,inputTestTimer=null,inputTestId=null;
+let runningProgram=false,activeStepIndex=null,completedSteps=new Set(),errorStepIndex=null,lastInputStates={},lastOutputStates={},inputCfgStates={},ioReadTimer=null,ioRenderTimer=null,runRenderTimer=null,runStartWatchdogTimer=null,runActivityWatchdogTimer=null,lastEsp32FrameAt=0,lastRunFrameAt=0,lastInputStateFrameAt=0,lastInputLogCache={},lastInputLogAt={},pendingProgStatus=null,pendingLoadErrors=null,inputDiagVisible=false,inputDiagRequestedAt=0,inputDiagDoneCount=null,inputTestTimer=null,inputTestId=null;
 const storageKey="tfg_robotica_v2";
 const commandPauseMs=35;
 const maxLogLines=300;
@@ -383,8 +383,8 @@ function handleFrame(f){lastEsp32FrameAt=Date.now();const body=f.startsWith("<")
   if(f.startsWith("<S,")){const v=clamp(f.slice(3,-1),1,180);setValue("spd",v);setValue("spdN",v);}
   if(f.startsWith("<V,")){const v=f.slice(3,-1).split(',');["v1","v2","v3"].forEach((id,i)=>{const n=clamp(v[i],1,180);setValue(id,n);setValue(id+"N",n);});}
   if(f.startsWith("<A,")){const v=clamp(f.slice(3,-1),10,1200);setValue("acc",v);setValue("accN",v);}
-  if(parts[0]==="IN"&&parts[1]==="CFG"&&parts.length>=6){inputCfgStates[parts[2]]={pin:Number(parts[3]),mode:parts[4],activeState:parts[5],at:Date.now()};if(inputDiagVisible)renderInputDiagnostics();}
-  if(parts[0]==="IN"&&parts[1]==="LIST"&&parts[2]==="DONE"){if(inputDiagVisible)renderInputDiagnostics();}
+  if(parts[0]==="IN"&&parts[1]==="CFG"&&parts.length>=6){inputCfgStates[parts[2]]={pin:Number(parts[3]),mode:parts[4],activeState:parts[5],raw:parts.length>=9?Number(parts[6]):null,stable:parts.length>=9?Number(parts[7]):null,active:parts.length>=9?Number(parts[8]):null,at:Date.now()};if(inputDiagVisible)renderInputDiagnostics();}
+  if(parts[0]==="IN"&&parts[1]==="LIST"&&parts[2]==="DONE"){inputDiagDoneCount=Number(parts[3]);if(inputDiagVisible)renderInputDiagnostics();}
   if(parts[0]==="IN"&&parts[1]==="STATE"&&parts.length>=5){updateInputState(parts[2],parts[3],parts[4]);}
   if(parts[0]==="OUT"&&parts[1]==="STATE"&&parts.length>=4){updateOutputState(parts[2],parts[3]);}
   if(parts[0]==="PROG"&&parts[1]==="STATUS"&&pendingProgStatus){pendingProgStatus.resolve({count:Number(parts[2]),running:Number(parts[3]),loop:Number(parts[4]),step:Number(parts[5])});pendingProgStatus=null;}
@@ -428,10 +428,10 @@ function renderIoStatePanel(){const inputRows=inputs.map(x=>{const stIn=lastInpu
 
 
 function fmtTime(ts){return ts?new Date(ts).toLocaleTimeString():"-";}
-function renderInputDiagnostics(){const panel=el("inputDiagPanel");if(!panel)return;panel.style.display=inputDiagVisible?"block":"none";if(!inputDiagVisible)return;const rows=inputs.map(x=>{const cfg=inputCfgStates[x.id];const stIn=lastInputStates[x.id];const cfgErr=!cfg?"Sin <IN,CFG> recibido":(cfg.pin!==Number(x.pin)?`GPIO ESP32=${cfg.pin}, web=${x.pin}`:"");return `<tr><td>${esc(x.id)}</td><td>${esc(x.name)}</td><td>${cfg?cfg.pin:x.pin}</td><td>${esc(cfg?cfg.mode:x.mode)}</td><td>${esc(cfg?cfg.activeState:x.activeState)}</td><td>${stIn?stIn.value:"?"}</td><td>${stIn?(stIn.active?"activa":"inactiva"):"sin lectura"}</td><td>${fmtTime(stIn?.at)}</td><td>${esc(cfgErr||"-")}</td></tr>`;}).join("")||`<tr><td colspan="9" class="small">No hay entradas configuradas en la web.</td></tr>`;panel.innerHTML=`<h3>Diagnóstico entradas</h3><div class="subtitle">Compara configuración local, <span class="mono">&lt;IN,CFG&gt;</span> del ESP32 y últimas lecturas <span class="mono">&lt;IN,STATE&gt;</span>.</div><table class="io-state-table"><thead><tr><th>ID</th><th>Nombre</th><th>GPIO</th><th>Modo</th><th>Activo</th><th>Valor</th><th>Lógico</th><th>Última lectura</th><th>Errores</th></tr></thead><tbody>${rows}</tbody></table>`;}
-async function diagnoseInputs(){if(!isConnected()){st("Conecta el ESP32 para diagnosticar entradas.","error");return;}inputDiagVisible=true;inputCfgStates={};renderInputDiagnostics();await sendLine("<IN,LIST>");for(const x of inputs)await sendLine(`<IN,READ,${x.id}>`);renderInputDiagnostics();}
+function renderInputDiagnostics(){const panel=el("inputDiagPanel");if(!panel)return;panel.style.display=inputDiagVisible?"block":"none";if(!inputDiagVisible)return;const rows=inputs.map(x=>{const cfg=inputCfgStates[x.id];const stIn=lastInputStates[x.id];const cfgErr=!cfg?"Sin <IN,CFG> recibido":(cfg.pin!==Number(x.pin)?`GPIO ESP32=${cfg.pin}, web=${x.pin}`:"");const readErr=!stIn||stIn.at<inputDiagRequestedAt?"Sin <IN,STATE> reciente":"";const errors=[cfgErr,readErr].filter(Boolean).join(" · ");const raw=cfg&&cfg.raw!==null?cfg.raw:(stIn?stIn.value:"?");const stable=cfg&&cfg.stable!==null?cfg.stable:(stIn?stIn.value:"?");const logical=stIn?(stIn.active?"activa":"inactiva"):(cfg&&cfg.active!==null?(cfg.active?"activa":"inactiva"):"sin lectura");return `<tr><td>${esc(x.name)}</td><td>${esc(x.id)}</td><td>${cfg?cfg.pin:x.pin}</td><td>${esc(cfg?cfg.mode:x.mode)}</td><td>${esc(cfg?cfg.activeState:x.activeState)}</td><td>${raw}</td><td>${stable}</td><td>${logical}</td><td>${fmtTime(stIn?.at||cfg?.at)}</td><td>${esc(errors||"-")}</td></tr>`;}).join("")||`<tr><td colspan="10" class="small">No hay entradas configuradas en la web.</td></tr>`;const done=inputDiagDoneCount===null?"pendiente":`${inputDiagDoneCount} entradas en ESP32`;panel.innerHTML=`<h3>Diagnóstico entradas</h3><div class="subtitle">Envía <span class="mono">&lt;IN,LIST&gt;</span> y después <span class="mono">&lt;IN,READ,id&gt;</span> para cada entrada. Resultado lista: ${done}.</div><table class="io-state-table"><thead><tr><th>Nombre</th><th>ID</th><th>GPIO</th><th>Modo</th><th>Activo HIGH/LOW</th><th>Valor eléctrico raw</th><th>Valor estable</th><th>Estado lógico</th><th>Última actualización</th><th>Error</th></tr></thead><tbody>${rows}</tbody></table>`;}
+async function diagnoseInputs(){if(!isConnected()){st("Conecta el ESP32 para diagnosticar entradas.","error");return;}inputDiagVisible=true;inputDiagRequestedAt=Date.now();inputDiagDoneCount=null;inputCfgStates={};renderInputDiagnostics();await sendLine("<IN,LIST>");for(const x of inputs)await sendLine(`<IN,READ,${x.id}>`);renderInputDiagnostics();setTimeout(()=>{if(inputDiagVisible)renderInputDiagnostics();},1200);}
 function stopInputTest(){if(inputTestTimer){clearInterval(inputTestTimer);inputTestTimer=null;}inputTestId=null;renderIO();}
-function toggleInputTest(id){if(inputTestId===id){stopInputTest();st("Prueba manual de entrada detenida.","warning");return;}if(!isConnected()){st("Conecta el ESP32 para probar entradas.","error");return;}inputTestId=id;if(inputTestTimer)clearInterval(inputTestTimer);const tick=()=>sendLine(`<IN,READ,${id}>`,{pause:false,logTx:false});tick();inputTestTimer=setInterval(tick,250);st("Prueba manual de entrada activa: "+id,"connected");renderIO();}
+function toggleInputTest(id){if(inputTestId===id){stopInputTest();st("Prueba manual de entrada detenida.","warning");return;}if(!isConnected()){st("Conecta el ESP32 para probar entradas.","error");return;}if(runningProgram){st("Detén el programa antes de probar una entrada aislada.","error");return;}inputTestId=id;if(inputTestTimer)clearInterval(inputTestTimer);const tick=()=>sendLine(`<IN,READ,${id}>`,{pause:false,logTx:false});tick();inputTestTimer=setInterval(tick,250);st("Prueba manual de entrada activa: "+id+" (solo IN,READ; sin programa ni Arduino)","connected");renderIO();}
 
 function renderSelectors(){return {inOpts:inputs.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join(""),outOpts:outputs.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join(""),poseOpts:poses.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")};}
 function optionList(items,current){return items.map(x=>`<option value="${esc(x.id)}" ${x.id===current?"selected":""}>${esc(x.name)}</option>`).join("");}

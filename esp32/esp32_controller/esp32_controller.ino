@@ -4,8 +4,9 @@
 // control.
 
 const unsigned long BAUD_RATE = 115200;
-const int ESP32_RX2_PIN = 16;
+const int ESP32_RX2_PIN = -1; // Sin RX: no se recibe nada desde Arduino.
 const int ESP32_TX2_PIN = 17;
+const bool DEBUG_ARDUINO_TX = false;
 
 const byte MAX_INPUTS = 16;
 const byte MAX_OUTPUTS = 16;
@@ -13,7 +14,6 @@ const byte MAX_STEPS = 100;
 const byte NUM_CHANNELS = 7;
 
 String usbBuffer;
-String arduinoBuffer;
 
 struct DigitalInputCfg {
   bool used;
@@ -124,18 +124,13 @@ void sendUsbDebug(const String &prefix, const String &frame) {
 
 bool isArduinoMotionCommand(const String &frame) {
   return frame.startsWith("<P,") || frame.startsWith("<S,") ||
-         frame.startsWith("<V,") || frame.startsWith("<A,") || frame == "<Q>" ||
-         frame == "<H>";
+         frame.startsWith("<V,") || frame.startsWith("<A,") || frame == "<H>";
 }
 
 void sendToArduino(const String &frame) {
   Serial2.println(frame);
-  sendUsbDebug("TX_ARDUINO", frame);
-}
-
-void forwardArduinoFrame(const String &frame) {
-  Serial.println(frame);
-  sendUsbDebug("RX_ARDUINO", frame);
+  if (DEBUG_ARDUINO_TX)
+    sendUsbDebug("TX_ARDUINO", frame);
 }
 
 byte splitCsv(char *text, char *parts[], byte maxParts) {
@@ -157,7 +152,7 @@ bool isReservedPin(int pin) {
     return true;
   if (pin == 1 || pin == 3)
     return true; // Serial USB
-  if (pin == ESP32_RX2_PIN || pin == ESP32_TX2_PIN)
+  if (pin == ESP32_TX2_PIN)
     return true;
   if (pin >= 6 && pin <= 11)
     return true; // Flash habitual
@@ -319,7 +314,9 @@ void listInputs() {
   for (byte i = 0; i < MAX_INPUTS; i++) {
     if (!inputs[i].used)
       continue;
+    sampleInput(i);
     count++;
+    int active = (inputs[i].stableValue == inputs[i].activeState) ? 1 : 0;
     Serial.print("<IN,CFG,");
     Serial.print(inputs[i].id);
     Serial.print(',');
@@ -328,6 +325,12 @@ void listInputs() {
     Serial.print(inputs[i].mode == INPUT_PULLUP ? "INPUT_PULLUP" : "INPUT");
     Serial.print(',');
     Serial.print(inputs[i].activeState == HIGH ? "HIGH" : "LOW");
+    Serial.print(',');
+    Serial.print(inputs[i].rawValue == HIGH ? 1 : 0);
+    Serial.print(',');
+    Serial.print(inputs[i].stableValue == HIGH ? 1 : 0);
+    Serial.print(',');
+    Serial.print(active);
     Serial.println('>');
   }
   Serial.print("<IN,LIST,DONE,");
@@ -864,27 +867,21 @@ void handleUsbFrame(const String &frame) {
     handleEsp32Command(frame);
 }
 
-void readFrames(Stream &stream, String &buffer, bool fromUsb) {
-  while (stream.available() > 0) {
-    char c = stream.read();
+void readUsbFrames() {
+  while (Serial.available() > 0) {
+    char c = Serial.read();
     if (c == '\r' || c == '\n')
       continue;
     if (c == '<')
-      buffer = "";
-    buffer += c;
+      usbBuffer = "";
+    usbBuffer += c;
     if (c == '>') {
-      if (fromUsb)
-        handleUsbFrame(buffer);
-      else
-        forwardArduinoFrame(buffer);
-      buffer = "";
+      handleUsbFrame(usbBuffer);
+      usbBuffer = "";
     }
-    if (buffer.length() > 250) {
-      buffer = "";
-      if (fromUsb)
-        sendErr("TRAMA_USB_DEMASIADO_LARGA");
-      else
-        sendErr("TRAMA_ARDUINO_DEMASIADO_LARGA");
+    if (usbBuffer.length() > 250) {
+      usbBuffer = "";
+      sendErr("TRAMA_USB_DEMASIADO_LARGA");
     }
   }
 }
@@ -897,8 +894,7 @@ void setup() {
 }
 
 void loop() {
-  readFrames(Serial, usbBuffer, true);
-  readFrames(Serial2, arduinoBuffer, false);
+  readUsbFrames();
   sampleInputs();
   serviceProgram();
 }
