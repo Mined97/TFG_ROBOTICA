@@ -36,8 +36,7 @@ Todas las tramas usan el formato `<...>` y se transmiten a **115200 baudios**.
 - `<PROG,ADD,PAUSE,durationMs>`
 - `<PROG,ADD,SPEED,s,v1,v2,v3,a>`
 - `<PROG,ADD,HOME>`
-- `<PROG,ADD,IF_INPUT,id,expectedState,targetTrue,targetFalse>`: evalúa una entrada. `expectedState` admite `ACTIVE` o `INACTIVE`; si coincide salta a `targetTrue`, si no coincide salta a `targetFalse`. Los destinos son pasos empezando en 1; `0` significa continuar con el siguiente paso.
-- `<PROG,ADD,IF_LOGIC,idA,operator,idB,targetTrue,targetFalse>`: evalúa una condición lógica. `operator` admite `A_ACTIVE`, `A_INACTIVE`, `NOT_A`, `A_AND_B`, `A_OR_B`, `A_AND_NOT_B`, `A_OR_NOT_B`, `NOT_A_AND_B` y `NOT_A_OR_B`. Para operadores que no necesitan entrada B, `idB` puede ir vacío o como `NONE`.
+- `<PROG,ADD,IF_INPUTS,id1,id2,targetBoth,targetOne,targetElse>`: evalúa dos entradas; si las dos están activas salta a `targetBoth`, si solo una está activa salta a `targetOne`, y si ninguna está activa salta a `targetElse`. Los destinos son pasos empezando en 1; `0` significa continuar con el siguiente paso.
 - `<PROG,ADD,JUMP,target>`: salta incondicionalmente al paso `target`, empezando en 1.
 - `<PROG,RUN>`
 - `<PROG,STOP>`
@@ -67,18 +66,11 @@ El ESP32 distingue sus propios comandos y reenvía al Arduino solo los comandos 
 - `<PROG,LOOP,value>`
 - `<RUN,START,totalSteps>`
 - `<RUN,STEP,index,total,type>`
-- `<RUN,BRANCH,index,result,target>`: informa del resultado de una condición (`true`/`false`) y del destino elegido; `target=0` indica continuar con el siguiente paso.
 - `<RUN,DONE>`
 - `<RUN,LOOP>`
 - `<RUN,STOPPED>`
 - `<RUN,ERROR,mensaje>`
 - `<ESP32,TX_ARDUINO,...>` si `DEBUG_ARDUINO_TX` está activado en el firmware ESP32.
-
-Errores específicos de condiciones en ejecución:
-
-- `<RUN,ERROR,ENTRADA_NO_ENCONTRADA>`: la entrada configurada para una espera o condición no existe en el ESP32.
-- `<RUN,ERROR,OPERADOR_LOGICO_INVALIDO>`: el operador de `IF_LOGIC` no está soportado.
-- `<RUN,ERROR,SALTO_INVALIDO>`: el destino elegido no apunta a un paso cargado.
 
 No existe retorno Arduino → ESP32: el ESP32 no lee `Serial2`, no reenvía respuestas del Arduino y no emite `<ESP32,RX_ARDUINO,...>`.
 
