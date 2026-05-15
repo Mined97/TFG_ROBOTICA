@@ -43,7 +43,8 @@ enum StepType {
   STEP_PAUSE,
   STEP_SPEED,
   STEP_HOME,
-  STEP_IF_INPUTS,
+  STEP_IF_INPUT,
+  STEP_IF_LOGIC,
   STEP_JUMP
 };
 
@@ -62,9 +63,11 @@ struct ProgramStep {
   int v3;
   int accel;
   String id2;
+  String logicOperator;
+  int expectedState;
+  int targetTrue;
+  int targetFalse;
   int targetBoth;
-  int targetOne;
-  int targetElse;
 };
 
 DigitalInputCfg inputs[MAX_INPUTS];
@@ -105,8 +108,10 @@ String stepTypeName(StepType type) {
     return "SPEED";
   case STEP_HOME:
     return "HOME";
-  case STEP_IF_INPUTS:
-    return "IF_INPUTS";
+  case STEP_IF_INPUT:
+    return "IF_INPUT";
+  case STEP_IF_LOGIC:
+    return "IF_LOGIC";
   case STEP_JUMP:
     return "JUMP";
   default:
@@ -135,10 +140,14 @@ void sendToArduino(const String &frame) {
 
 byte splitCsv(char *text, char *parts[], byte maxParts) {
   byte count = 0;
-  char *token = strtok(text, ",");
-  while (token != NULL && count < maxParts) {
-    parts[count++] = token;
-    token = strtok(NULL, ",");
+  if (maxParts == 0)
+    return 0;
+  parts[count++] = text;
+  for (char *p = text; *p != '\0' && count < maxParts; p++) {
+    if (*p == ',') {
+      *p = '\0';
+      parts[count++] = p + 1;
+    }
   }
   return count;
 }
@@ -186,6 +195,55 @@ int parseBoolState(const char *text, bool *ok = NULL) {
     *ok = false;
   return LOW;
 }
+
+bool parseExpectedState(const char *text, int *state) {
+  String desired = String(text);
+  desired.toUpperCase();
+  if (desired == "ACTIVE" || desired == "ACTIVA" || desired == "1") {
+    *state = 1;
+    return true;
+  }
+  if (desired == "INACTIVE" || desired == "INACTIVA" || desired == "0") {
+    *state = 0;
+    return true;
+  }
+  return false;
+}
+
+bool logicNeedsInputB(const String &op) {
+  return op == "A_AND_B" || op == "A_OR_B" || op == "A_AND_NOT_B" ||
+         op == "A_OR_NOT_B" || op == "NOT_A_AND_B" || op == "NOT_A_OR_B";
+}
+
+bool isValidLogicOperator(const String &op) {
+  return op == "A_ACTIVE" || op == "A_INACTIVE" || op == "NOT_A" ||
+         logicNeedsInputB(op);
+}
+
+bool evaluateLogicOperator(const String &op, bool activeA, bool activeB,
+                           bool *ok) {
+  *ok = true;
+  if (op == "A_ACTIVE")
+    return activeA;
+  if (op == "A_INACTIVE" || op == "NOT_A")
+    return !activeA;
+  if (op == "A_AND_B")
+    return activeA && activeB;
+  if (op == "A_OR_B")
+    return activeA || activeB;
+  if (op == "A_AND_NOT_B")
+    return activeA && !activeB;
+  if (op == "A_OR_NOT_B")
+    return activeA || !activeB;
+  if (op == "NOT_A_AND_B")
+    return !activeA && activeB;
+  if (op == "NOT_A_OR_B")
+    return !activeA || activeB;
+  *ok = false;
+  return false;
+}
+
+bool validBranchTarget(int target) { return target >= 0 && target <= MAX_STEPS; }
 
 int findInput(const String &id) {
   for (byte i = 0; i < MAX_INPUTS; i++)
@@ -379,6 +437,24 @@ int inputIsActive(const String &id, bool *ok) {
   return value == inputs[idx].activeState ? 1 : 0;
 }
 
+void reportBranch(int stepOneBased, bool result, int target) {
+  Serial.print("<RUN,BRANCH,");
+  Serial.print(stepOneBased);
+  Serial.print(',');
+  Serial.print(result ? "true" : "false");
+  Serial.print(',');
+  Serial.print(target);
+  Serial.println('>');
+}
+
+void followBranch(bool result, int target) {
+  reportBranch(currentStep + 1, result, target);
+  if (target <= 0)
+    finishCurrentStep();
+  else
+    jumpToStep(target);
+}
+
 void startProgram() {
   if (programCount == 0) {
     Serial.println("<RUN,ERROR,PROGRAMA_VACIO>");
@@ -447,21 +523,37 @@ void beginStep(ProgramStep &step) {
   } else if (step.type == STEP_HOME) {
     sendToArduino("<H>");
     finishCurrentStep();
-  } else if (step.type == STEP_IF_INPUTS) {
-    bool ok1 = false, ok2 = false;
-    int active1 = inputIsActive(step.id, &ok1);
-    int active2 = inputIsActive(step.id2, &ok2);
-    if (!ok1 || !ok2) {
+  } else if (step.type == STEP_IF_INPUT) {
+    bool ok = false;
+    int active = inputIsActive(step.id, &ok);
+    if (!ok) {
       running = false;
       Serial.println("<RUN,ERROR,ENTRADA_NO_ENCONTRADA>");
       return;
     }
-    int target = (active1 && active2) ? step.targetBoth
-                 : ((active1 || active2) ? step.targetOne : step.targetElse);
-    if (target <= 0)
-      finishCurrentStep();
-    else
-      jumpToStep(target);
+    bool result = active == step.expectedState;
+    followBranch(result, result ? step.targetTrue : step.targetFalse);
+  } else if (step.type == STEP_IF_LOGIC) {
+    bool okA = false, okB = true;
+    int activeA = inputIsActive(step.id, &okA);
+    int activeB = 0;
+    String op = step.logicOperator;
+    op.toUpperCase();
+    if (logicNeedsInputB(op))
+      activeB = inputIsActive(step.id2, &okB);
+    if (!okA || !okB) {
+      running = false;
+      Serial.println("<RUN,ERROR,ENTRADA_NO_ENCONTRADA>");
+      return;
+    }
+    bool opOk = false;
+    bool result = evaluateLogicOperator(op, activeA == 1, activeB == 1, &opOk);
+    if (!opOk) {
+      running = false;
+      Serial.println("<RUN,ERROR,OPERADOR_LOGICO_INVALIDO>");
+      return;
+    }
+    followBranch(result, result ? step.targetTrue : step.targetFalse);
   } else if (step.type == STEP_JUMP) {
     jumpToStep(step.targetBoth);
   }
@@ -750,9 +842,11 @@ void handleEsp32Command(String frame) {
       step.v3 = 0;
       step.accel = 0;
       step.id2 = "";
+      step.logicOperator = "";
+      step.expectedState = 0;
+      step.targetTrue = 0;
+      step.targetFalse = 0;
       step.targetBoth = -1;
-      step.targetOne = -1;
-      step.targetElse = -1;
       if (type == "POSE") {
         if (count != 11) {
           sendErr("PROG_POSE_PARAMETROS");
@@ -790,14 +884,7 @@ void handleEsp32Command(String frame) {
           sendErr("ENTRADA_NO_ENCONTRADA");
           return;
         }
-        String desired = String(parts[4]);
-        desired.toUpperCase();
-        if (desired == "ACTIVE" || desired == "ACTIVA" || desired == "1")
-          step.state = 1;
-        else if (desired == "INACTIVE" || desired == "INACTIVA" ||
-                 desired == "0")
-          step.state = 0;
-        else {
+        if (!parseExpectedState(parts[4], &step.state)) {
           sendErr("ESTADO_ENTRADA_INVALIDO");
           return;
         }
@@ -826,21 +913,59 @@ void handleEsp32Command(String frame) {
           return;
         }
         step.type = STEP_HOME;
-      } else if (type == "IF_INPUTS") {
-        if (count != 8) {
-          sendErr("PROG_IF_INPUTS_PARAMETROS");
+      } else if (type == "IF_INPUT") {
+        if (count != 7) {
+          sendErr("PROG_IF_INPUT_PARAMETROS");
           return;
         }
-        step.type = STEP_IF_INPUTS;
+        step.type = STEP_IF_INPUT;
         step.id = parts[3];
-        step.id2 = parts[4];
-        if (findInput(step.id) < 0 || findInput(step.id2) < 0) {
+        if (findInput(step.id) < 0) {
           sendErr("ENTRADA_NO_ENCONTRADA");
           return;
         }
-        step.targetBoth = atoi(parts[5]);
-        step.targetOne = atoi(parts[6]);
-        step.targetElse = atoi(parts[7]);
+        if (!parseExpectedState(parts[4], &step.expectedState)) {
+          sendErr("ESTADO_ENTRADA_INVALIDO");
+          return;
+        }
+        step.targetTrue = atoi(parts[5]);
+        step.targetFalse = atoi(parts[6]);
+        if (!validBranchTarget(step.targetTrue) || !validBranchTarget(step.targetFalse)) {
+          sendErr("SALTO_INVALIDO");
+          return;
+        }
+      } else if (type == "IF_LOGIC") {
+        if (count != 8) {
+          sendErr("PROG_IF_LOGIC_PARAMETROS");
+          return;
+        }
+        step.type = STEP_IF_LOGIC;
+        step.id = parts[3];
+        step.logicOperator = String(parts[4]);
+        step.logicOperator.toUpperCase();
+        step.id2 = parts[5];
+        String idBText = step.id2;
+        idBText.toUpperCase();
+        if (idBText == "NONE")
+          step.id2 = "";
+        if (!isValidLogicOperator(step.logicOperator)) {
+          sendErr("OPERADOR_LOGICO_INVALIDO");
+          return;
+        }
+        if (findInput(step.id) < 0 ||
+            (logicNeedsInputB(step.logicOperator) && findInput(step.id2) < 0)) {
+          sendErr("ENTRADA_NO_ENCONTRADA");
+          return;
+        }
+        step.targetTrue = atoi(parts[6]);
+        step.targetFalse = atoi(parts[7]);
+        if (!validBranchTarget(step.targetTrue) || !validBranchTarget(step.targetFalse)) {
+          sendErr("SALTO_INVALIDO");
+          return;
+        }
+      } else if (type == "IF_INPUTS") {
+        sendErr("PROG_IF_INPUTS_OBSOLETO");
+        return;
       } else if (type == "JUMP") {
         if (count != 4) {
           sendErr("PROG_JUMP_PARAMETROS");
