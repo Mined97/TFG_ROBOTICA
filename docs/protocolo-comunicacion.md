@@ -16,6 +16,7 @@ Todas las tramas usan el formato `<...>` y se transmiten a **115200 baudios**.
   - `mode`: `INPUT` o `INPUT_PULLUP`.
   - `activeState`: `HIGH`, `LOW`, `1` o `0`.
 - `<IN,READ,id>`: lee una entrada.
+- `<IN,LIST>`: lista las entradas realmente configuradas en el ESP32 mediante `<IN,CFG,...>` y finaliza con `<IN,LIST,DONE,count>`.
 - `<IN,REMOVE,id>`: elimina una entrada.
 
 ### Salidas digitales
@@ -39,7 +40,7 @@ Todas las tramas usan el formato `<...>` y se transmiten a **115200 baudios**.
 - `<PROG,ADD,JUMP,target>`: salta incondicionalmente al paso `target`, empezando en 1.
 - `<PROG,RUN>`
 - `<PROG,STOP>`
-- `<PROG,STATUS>`
+- `<PROG,STATUS>`: devuelve `<PROG,STATUS,count,running,loop,step>` para verificar la carga antes de ejecutar.
 
 ## Comandos reenviados al Arduino
 
@@ -58,8 +59,11 @@ El ESP32 distingue sus propios comandos y reenvía al Arduino solo los comandos 
 - `<OK,mensaje>`
 - `<ERR,mensaje>`
 - `<IN,STATE,id,value,active>`
+- `<IN,CFG,id,pin,mode,activeState>`
+- `<IN,LIST,DONE,count>`
 - `<OUT,STATE,id,value>`
 - `<PROG,LOADED,totalSteps>`
+- `<PROG,STATUS,count,running,loop,step>`
 - `<PROG,LOOP,value>`
 - `<RUN,START,totalSteps>`
 - `<RUN,STEP,index,total,type>`
