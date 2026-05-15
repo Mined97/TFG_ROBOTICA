@@ -50,7 +50,6 @@ El ESP32 distingue sus propios comandos y reenvía al Arduino solo los comandos 
 - `<S,velocidad>`
 - `<V,v1,v2,v3>`
 - `<A,aceleracion>`
-- `<Q>`
 - `<H>`
 
 ## Respuestas del ESP32
@@ -59,7 +58,7 @@ El ESP32 distingue sus propios comandos y reenvía al Arduino solo los comandos 
 - `<OK,mensaje>`
 - `<ERR,mensaje>`
 - `<IN,STATE,id,value,active>`
-- `<IN,CFG,id,pin,mode,activeState>`
+- `<IN,CFG,id,pin,mode,activeState,raw,stable,active>`
 - `<IN,LIST,DONE,count>`
 - `<OUT,STATE,id,value>`
 - `<PROG,LOADED,totalSteps>`
@@ -71,16 +70,10 @@ El ESP32 distingue sus propios comandos y reenvía al Arduino solo los comandos 
 - `<RUN,LOOP>`
 - `<RUN,STOPPED>`
 - `<RUN,ERROR,mensaje>`
-- `<ESP32,TX_ARDUINO,...>`
-- `<ESP32,RX_ARDUINO,...>`
+- `<ESP32,TX_ARDUINO,...>` si `DEBUG_ARDUINO_TX` está activado en el firmware ESP32.
 
-## Respuestas compatibles del Arduino
+No existe retorno Arduino → ESP32: el ESP32 no lee `Serial2`, no reenvía respuestas del Arduino y no emite `<ESP32,RX_ARDUINO,...>`.
 
-- `<T,j1,j2,j3,j4,j5,j6,pinza>`
-- `<S,velocidad>`
-- `<V,v1,v2,v3>`
-- `<A,aceleracion>`
-- `<OK,mensaje>`
-- `<ERR,mensaje>`
+## Respuestas del Arduino
 
-El ESP32 reenvía a la interfaz la respuesta original del Arduino y además genera una línea de monitorización `<ESP32,RX_ARDUINO,...>`.
+El ESP32 no consume ni reenvía respuestas del Arduino. Para diagnosticar el Arduino, conéctalo directamente por USB a un monitor serie.

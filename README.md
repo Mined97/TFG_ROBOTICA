@@ -50,16 +50,15 @@ No se usa WiFi, Bluetooth, React, Vite, Node ni frameworks web.
 3. Carga el sketch.
 4. El ESP32 usa:
    - `Serial` USB a 115200 baudios para el PC.
-   - `Serial2` a 115200 baudios para el Arduino.
-   - RX2 = GPIO16 y TX2 = GPIO17.
+   - `Serial2` a 115200 baudios hacia el Arduino.
+   - TX2 = GPIO17; RX desactivado (`-1`) porque no se reciben tramas desde Arduino.
 
 ## Conexión ESP32 ↔ Arduino
 
 - ESP32 GPIO17 / TX2 -> RX del Arduino Uno.
-- TX del Arduino Uno -> ESP32 GPIO16 / RX2.
 - GND común entre placas.
 
-> **Advertencia de niveles lógicos:** el Arduino Uno trabaja a 5 V y el ESP32 a 3,3 V. Usa divisor resistivo o conversor de nivel en la señal TX del Arduino hacia RX del ESP32.
+> **Arquitectura sin retorno:** no conectes TX del Arduino al ESP32 para esta versión. El Arduino solo recibe comandos de movimiento.
 
 ## Cómo probar conexión directa con Arduino
 
@@ -72,11 +71,11 @@ No se usa WiFi, Bluetooth, React, Vite, Node ni frameworks web.
 ## Cómo probar conexión por ESP32
 
 1. Carga ambos firmwares.
-2. Cablea `Serial2` entre ESP32 y Arduino con GND común y adaptación de nivel.
+2. Cablea solo TX ESP32 GPIO17 hacia RX Arduino y GND común.
 3. Conecta el ESP32 al PC.
 4. Abre `web/index.html` y pulsa **Conectar**.
-5. Pulsa **Ping ESP32** y luego **Leer brazo**.
-6. En el monitor deben verse comandos enviados al ESP32, trazas `<ESP32,TX_ARDUINO,...>` y respuestas `<ESP32,RX_ARDUINO,...>`.
+5. Pulsa **Ping ESP32**.
+6. En el monitor deben verse respuestas del ESP32. No deben aparecer trazas `<ESP32,RX_ARDUINO,...>`; si necesitas ver envíos al Arduino, activa `DEBUG_ARDUINO_TX` en el firmware ESP32.
 
 ## Cómo crear entradas y salidas
 
@@ -113,7 +112,6 @@ El ESP32 reenvía al Arduino solo estos comandos de movimiento:
 - `<S,velocidad>`
 - `<V,v1,v2,v3>`
 - `<A,aceleracion>`
-- `<Q>`
 - `<H>`
 
 Los comandos propios del ESP32 incluyen `<PING>`, `<STATUS>`, `<IN,...>`, `<OUT,...>` y `<PROG,...>`. Consulta `docs/protocolo-comunicacion.md` para el detalle completo.

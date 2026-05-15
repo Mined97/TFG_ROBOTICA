@@ -15,17 +15,16 @@ PC / navegador web -> WebSerial USB -> ESP32 -> Serial2/UART -> Arduino Uno -> s
 ## Comunicación
 
 - PC a ESP32: `Serial` USB a **115200 baudios**.
-- ESP32 a Arduino: `Serial2` a **115200 baudios**, con **RX2 GPIO16** y **TX2 GPIO17**.
+- ESP32 a Arduino: `Serial2` a **115200 baudios**, con **TX2 GPIO17** y RX desactivado (`-1`).
 - No se usa WiFi ni Bluetooth.
 
 ## Cableado serie recomendado
 
 - ESP32 GPIO17 / TX2 -> RX del Arduino Uno.
-- TX del Arduino Uno -> ESP32 GPIO16 / RX2.
 - GND común entre ESP32 y Arduino.
 
-> Advertencia: el Arduino Uno trabaja normalmente a 5 V y el ESP32 a 3,3 V. La señal TX del Arduino hacia RX del ESP32 debe adaptarse con divisor resistivo o conversor de nivel lógico.
+> Arquitectura sin retorno: no conectes TX del Arduino al ESP32. El Arduino solo recibe comandos de movimiento.
 
 ## Control de entradas y salidas
 
-Las entradas y salidas pertenecen al ESP32, no al Arduino. La interfaz envía la configuración al ESP32 mediante comandos `<IN,...>` y `<OUT,...>`. El firmware valida pines reservados: GPIO 1, 3, 6-11, 16 y 17 no se permiten; GPIO 34, 35, 36 y 39 no se permiten como salidas.
+Las entradas y salidas pertenecen al ESP32, no al Arduino. La interfaz envía la configuración al ESP32 mediante comandos `<IN,...>` y `<OUT,...>`. El firmware valida pines reservados: GPIO 1, 3, 6-11 y 17 no se permiten; GPIO 34, 35, 36 y 39 no se permiten como salidas.
