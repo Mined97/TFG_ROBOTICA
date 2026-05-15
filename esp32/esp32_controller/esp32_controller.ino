@@ -44,6 +44,8 @@ enum StepType {
   STEP_SPEED,
   STEP_HOME,
   STEP_IF_INPUTS,
+  STEP_IF_INPUT,
+  STEP_IF_LOGIC,
   STEP_JUMP
 };
 
@@ -62,6 +64,7 @@ struct ProgramStep {
   int v3;
   int accel;
   String id2;
+  String logicOperator;
   int targetBoth;
   int targetOne;
   int targetElse;
@@ -107,6 +110,10 @@ String stepTypeName(StepType type) {
     return "HOME";
   case STEP_IF_INPUTS:
     return "IF_INPUTS";
+  case STEP_IF_INPUT:
+    return "IF_INPUT";
+  case STEP_IF_LOGIC:
+    return "IF_LOGIC";
   case STEP_JUMP:
     return "JUMP";
   default:
@@ -379,6 +386,58 @@ int inputIsActive(const String &id, bool *ok) {
   return value == inputs[idx].activeState ? 1 : 0;
 }
 
+bool validTargetValue(int target) { return target >= 0 && target <= MAX_STEPS; }
+
+bool logicOperatorNeedsB(const String &op) {
+  return op == "A_AND_B" || op == "A_OR_B" || op == "A_AND_NOT_B" ||
+         op == "A_OR_NOT_B" || op == "NOT_A_AND_B" || op == "NOT_A_OR_B";
+}
+
+bool isValidLogicOperator(const String &op) {
+  return op == "A_ACTIVE" || op == "A_INACTIVE" || op == "NOT_A" ||
+         logicOperatorNeedsB(op);
+}
+
+bool evaluateLogicOperator(const String &op, int activeA, int activeB, bool *ok) {
+  *ok = true;
+  if (op == "A_ACTIVE")
+    return activeA;
+  if (op == "A_INACTIVE" || op == "NOT_A")
+    return !activeA;
+  if (op == "A_AND_B")
+    return activeA && activeB;
+  if (op == "A_OR_B")
+    return activeA || activeB;
+  if (op == "A_AND_NOT_B")
+    return activeA && !activeB;
+  if (op == "A_OR_NOT_B")
+    return activeA || !activeB;
+  if (op == "NOT_A_AND_B")
+    return !activeA && activeB;
+  if (op == "NOT_A_OR_B")
+    return !activeA || activeB;
+  *ok = false;
+  return false;
+}
+
+void reportBranch(bool result, int target) {
+  Serial.print("<RUN,BRANCH,step=");
+  Serial.print(currentStep + 1);
+  Serial.print(",result=");
+  Serial.print(result ? "true" : "false");
+  Serial.print(",target=");
+  Serial.print(target);
+  Serial.println('>');
+}
+
+bool continueOrJump(int target) {
+  if (target <= 0) {
+    finishCurrentStep();
+    return true;
+  }
+  return jumpToStep(target);
+}
+
 void startProgram() {
   if (programCount == 0) {
     Serial.println("<RUN,ERROR,PROGRAMA_VACIO>");
@@ -458,10 +517,40 @@ void beginStep(ProgramStep &step) {
     }
     int target = (active1 && active2) ? step.targetBoth
                  : ((active1 || active2) ? step.targetOne : step.targetElse);
-    if (target <= 0)
-      finishCurrentStep();
-    else
-      jumpToStep(target);
+    reportBranch(target == step.targetBoth, target);
+    continueOrJump(target);
+  } else if (step.type == STEP_IF_INPUT) {
+    bool ok = false;
+    int active = inputIsActive(step.id, &ok);
+    if (!ok) {
+      running = false;
+      Serial.println("<RUN,ERROR,ENTRADA_NO_ENCONTRADA>");
+      return;
+    }
+    bool result = active == step.state;
+    int target = result ? step.targetBoth : step.targetElse;
+    reportBranch(result, target);
+    continueOrJump(target);
+  } else if (step.type == STEP_IF_LOGIC) {
+    bool okA = false, okB = true, opOk = false;
+    int activeA = inputIsActive(step.id, &okA);
+    int activeB = 0;
+    if (logicOperatorNeedsB(step.logicOperator))
+      activeB = inputIsActive(step.id2, &okB);
+    if (!okA || !okB) {
+      running = false;
+      Serial.println("<RUN,ERROR,ENTRADA_NO_ENCONTRADA>");
+      return;
+    }
+    bool result = evaluateLogicOperator(step.logicOperator, activeA, activeB, &opOk);
+    if (!opOk) {
+      running = false;
+      Serial.println("<RUN,ERROR,OPERADOR_LOGICO_INVALIDO>");
+      return;
+    }
+    int target = result ? step.targetBoth : step.targetElse;
+    reportBranch(result, target);
+    continueOrJump(target);
   } else if (step.type == STEP_JUMP) {
     jumpToStep(step.targetBoth);
   }
@@ -750,6 +839,7 @@ void handleEsp32Command(String frame) {
       step.v3 = 0;
       step.accel = 0;
       step.id2 = "";
+      step.logicOperator = "";
       step.targetBoth = -1;
       step.targetOne = -1;
       step.targetElse = -1;
@@ -841,6 +931,66 @@ void handleEsp32Command(String frame) {
         step.targetBoth = atoi(parts[5]);
         step.targetOne = atoi(parts[6]);
         step.targetElse = atoi(parts[7]);
+        if (!validTargetValue(step.targetBoth) || !validTargetValue(step.targetOne) ||
+            !validTargetValue(step.targetElse)) {
+          sendErr("SALTO_INVALIDO");
+          return;
+        }
+      } else if (type == "IF_INPUT") {
+        if (count != 7) {
+          sendErr("PROG_IF_INPUT_PARAMETROS");
+          return;
+        }
+        step.type = STEP_IF_INPUT;
+        step.id = parts[3];
+        if (findInput(step.id) < 0) {
+          sendErr("ENTRADA_NO_ENCONTRADA");
+          return;
+        }
+        String desired = String(parts[4]);
+        desired.toUpperCase();
+        if (desired == "ACTIVE" || desired == "ACTIVA" || desired == "1")
+          step.state = 1;
+        else if (desired == "INACTIVE" || desired == "INACTIVA" || desired == "0")
+          step.state = 0;
+        else {
+          sendErr("ESTADO_ENTRADA_INVALIDO");
+          return;
+        }
+        step.targetBoth = atoi(parts[5]);
+        step.targetElse = atoi(parts[6]);
+        if (!validTargetValue(step.targetBoth) || !validTargetValue(step.targetElse)) {
+          sendErr("SALTO_INVALIDO");
+          return;
+        }
+      } else if (type == "IF_LOGIC") {
+        if (count != 8) {
+          sendErr("PROG_IF_LOGIC_PARAMETROS");
+          return;
+        }
+        step.type = STEP_IF_LOGIC;
+        step.id = parts[3];
+        step.logicOperator = String(parts[4]);
+        step.logicOperator.toUpperCase();
+        step.id2 = parts[5];
+        if (findInput(step.id) < 0) {
+          sendErr("ENTRADA_NO_ENCONTRADA");
+          return;
+        }
+        if (!isValidLogicOperator(step.logicOperator)) {
+          sendErr("OPERADOR_LOGICO_INVALIDO");
+          return;
+        }
+        if (logicOperatorNeedsB(step.logicOperator) && findInput(step.id2) < 0) {
+          sendErr("ENTRADA_NO_ENCONTRADA");
+          return;
+        }
+        step.targetBoth = atoi(parts[6]);
+        step.targetElse = atoi(parts[7]);
+        if (!validTargetValue(step.targetBoth) || !validTargetValue(step.targetElse)) {
+          sendErr("SALTO_INVALIDO");
+          return;
+        }
       } else if (type == "JUMP") {
         if (count != 4) {
           sendErr("PROG_JUMP_PARAMETROS");
@@ -848,6 +998,10 @@ void handleEsp32Command(String frame) {
         }
         step.type = STEP_JUMP;
         step.targetBoth = atoi(parts[3]);
+        if (step.targetBoth < 1 || step.targetBoth > MAX_STEPS) {
+          sendErr("SALTO_INVALIDO");
+          return;
+        }
       } else {
         sendErr("PROG_TIPO_DESCONOCIDO");
         return;
