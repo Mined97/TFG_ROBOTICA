@@ -6,7 +6,7 @@
   <title>Brazo 6 ejes + Pinza - WebSerial ESP32</title>
   <style>
     :root{color-scheme:light;--bg:#edf2f8;--panel:#fff;--panel-soft:#f8fafc;--text:#0f172a;--muted:#64748b;--line:#dbe3ee;--primary:#2563eb;--primary-dark:#1d4ed8;--primary-soft:#dbeafe;--success:#16a34a;--warning:#f97316;--danger:#dc2626;--shadow:0 18px 45px rgba(15,23,42,.10);--radius:22px}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(37,99,235,.22),transparent 35%),radial-gradient(circle at bottom right,rgba(14,165,233,.16),transparent 35%),var(--bg)}.app{width:min(1280px,calc(100% - 28px));margin:0 auto;padding:24px 0 34px}.hero{position:relative;overflow:hidden;border-radius:30px;padding:26px;background:linear-gradient(135deg,rgba(15,23,42,.94),rgba(30,64,175,.90)),linear-gradient(135deg,#0f172a,#2563eb);color:white;box-shadow:var(--shadow);display:grid;grid-template-columns:1.6fr .9fr;gap:22px;align-items:end}.hero::after{content:"";position:absolute;inset:auto -90px -130px auto;width:320px;height:320px;border-radius:999px;background:rgba(255,255,255,.12)}.eyebrow{display:inline-flex;gap:8px;align-items:center;width:max-content;margin-bottom:12px;padding:7px 11px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.10);font-size:13px;color:#dbeafe}h1{margin:0;font-size:clamp(30px,4vw,48px);line-height:1.03;letter-spacing:-.04em}.hero p{margin:14px 0 0;max-width:760px;color:#dbeafe;font-size:16px;line-height:1.6}.hero-panel{position:relative;z-index:1;padding:18px;border:1px solid rgba(255,255,255,.18);border-radius:22px;background:rgba(255,255,255,.10);backdrop-filter:blur(10px)}.hero-panel .metric{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.12);color:#dbeafe;font-size:14px}.hero-panel .metric:last-child{border-bottom:0}.hero-panel b{color:#fff}.layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:18px;margin-top:18px;align-items:start}.stack{display:grid;gap:18px}.card{border:1px solid rgba(219,227,238,.95);border-radius:var(--radius);padding:18px;background:rgba(255,255,255,.92);box-shadow:0 12px 32px rgba(15,23,42,.07);backdrop-filter:blur(8px)}.card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}h2,h3{margin:0}h2{font-size:20px;letter-spacing:-.02em}h3{font-size:17px;letter-spacing:-.01em}.subtitle,.small{color:var(--muted);font-size:14px;line-height:1.45}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:.95em}.button-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}button{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 13px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--text);font-weight:750;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.06);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease}button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 9px 20px rgba(15,23,42,.10);border-color:#bfdbfe}button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}.btn-primary{border-color:transparent;background:linear-gradient(135deg,var(--primary),#0ea5e9);color:white}.btn-soft{background:var(--panel-soft)}.btn-danger{color:var(--danger);border-color:#fecaca;background:#fff7f7}.btn-play{color:white;border-color:transparent;background:linear-gradient(135deg,#16a34a,#22c55e)}.status-box{display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:#f8fafc}.status-dot{width:10px;height:10px;flex:0 0 10px;border-radius:999px;background:var(--warning);box-shadow:0 0 0 5px rgba(249,115,22,.12)}.status-dot.connected{background:var(--success);box-shadow:0 0 0 5px rgba(22,163,74,.12)}.status-dot.error{background:var(--danger);box-shadow:0 0 0 5px rgba(220,38,38,.12)}#st{overflow-wrap:anywhere}.row{display:grid;grid-template-columns:130px minmax(0,1fr) 86px;gap:12px;align-items:center;margin:12px 0;padding:10px;border:1px solid #eef2f7;border-radius:16px;background:linear-gradient(180deg,#fff,#fbfdff)}.joint-label{display:flex;align-items:center;gap:9px}.joint-index{display:inline-flex;align-items:center;justify-content:center;width:34px;height:30px;border-radius:11px;color:#1d4ed8;background:var(--primary-soft);font-weight:850;font-size:13px}input[type=range]{width:100%;accent-color:var(--primary);cursor:pointer}input[type=number],input[type=text],select,textarea{width:100%;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--text);outline:none;transition:border-color .15s ease,box-shadow .15s ease}input[type=number],input[type=text],select{padding:10px 9px;min-height:40px}input[type=number]{font-weight:750;text-align:center}select[multiple]{min-height:214px}textarea{min-height:140px;padding:12px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.45}input:focus,select:focus,textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 4px rgba(37,99,235,.12)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.surface{padding:14px;border-radius:18px;background:var(--panel-soft);border:1px solid #eef2f7}label{display:flex;gap:9px;align-items:center;width:max-content;font-weight:750;color:#334155;user-select:none}.hint{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:12px;border-radius:16px;background:#eff6ff;color:#1e3a8a;font-size:14px;line-height:1.45}.pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:13px;font-weight:750;white-space:nowrap}.divider{height:10px}.io-card,.step-card{display:grid;gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:16px;background:white;margin-bottom:10px}.step-card{border-left:5px solid #60a5fa}.step-tools{display:flex;gap:6px;flex-wrap:wrap}.step-tools button{min-height:32px;padding:6px 9px;border-radius:10px}.field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.log{height:330px;overflow:auto;background:#0f172a;color:#dbeafe;border-radius:16px;padding:12px;font-size:12px;line-height:1.45}.log div{border-bottom:1px solid rgba(255,255,255,.07);padding:3px 0}.tx{color:#93c5fd}.rx{color:#86efac}.err{color:#fca5a5}.run{color:#fde68a}.jsonbox{min-height:220px}@media (max-width:920px){.hero,.layout,.grid2,.grid3{grid-template-columns:1fr}.hero{padding:22px}}@media (max-width:620px){.app{width:min(100% - 18px,1180px);padding-top:10px}.hero{border-radius:22px}.card{padding:14px;border-radius:18px}.row{grid-template-columns:1fr;gap:8px}input[type=number]{text-align:left}.button-row button{width:100%}}
-  </style>
+  .wide-rows{display:grid;gap:10px}.wide-rows .row{margin:0}.pose-actions{display:grid;gap:10px}select#poseList{min-height:214px}</style>
 </head>
 <body>
 <main class="app">
@@ -49,8 +49,7 @@
 <button id="btnConn" class="btn-primary">🔌 Conectar</button>
 <button id="btnPing" class="btn-soft" disabled>🏓 Ping ESP32</button>
 <button id="btnHome" class="btn-soft" disabled>🏠 Home</button>
-<button id="btnQuery" class="btn-soft" disabled>📡 Leer brazo</button>
-<button id="btnStopPlay" class="btn-danger" disabled>⏹ Parar reproducción local</button>
+<button id="btnStopMain" class="btn-danger" disabled>⏹ Parar</button>
 </div>
 <div class="status-box">
 <span class="status-dot">
@@ -84,7 +83,7 @@
 <input id="spd" type="range" min="1" max="180" value="60">
 <input id="spdN" type="number" min="1" max="180" value="60">
 </div>
-<div class="grid3">
+<div class="wide-rows">
 <div class="row">
 <div class="joint-label">
 <span class="joint-index">V1</span>
@@ -120,32 +119,23 @@
 <div class="card-header">
 <div>
 <h2>Poses guardadas</h2>
-<div class="subtitle">Conserva la reproducción local original y permite usar poses en el editor ESP32.</div>
+<div class="subtitle">Guarda posiciones y muévelas solo cuando pulses “Ir a esta pose”. El selector no mueve el robot automáticamente.</div>
 </div>
 </div>
 <div class="grid2">
 <div class="surface">
-<select id="poseList" multiple>
+<select id="poseList" size="8">
 </select>
 <div class="button-row" style="margin-top:10px">
-<button id="btnSave" class="btn-primary" disabled>💾 Guardar pose</button>
-<button id="btnDelete" class="btn-danger">🗑 Borrar</button>
-<button id="btnClear" class="btn-danger">🧹 Limpiar</button>
+<button id="btnSave" class="btn-primary" disabled>💾 Guardar pose actual</button>
+<button id="btnGoPose" class="btn-play" disabled>▶ Ir a esta pose</button>
+<button id="btnDelete" class="btn-danger" disabled>🗑 Borrar pose</button>
+<button id="btnClear" class="btn-danger">🧹 Limpiar poses</button>
 </div>
 </div>
-<div class="surface">
-<div class="row">
-<div class="joint-label">
-<span class="joint-index">D</span>
-<b>Delay</b>
-</div>
-<input id="delay" type="range" min="100" max="5000" value="1000">
-<input id="delayN" type="number" min="100" max="5000" value="1000">
-</div>
-<label>
-<input id="loop" type="checkbox"> Repetir poses</label>
-<div class="button-row" style="margin-top:12px">
-<button id="btnPlay" class="btn-play" disabled>▶ Reproducir poses</button>
+<div class="surface pose-actions">
+<div class="small">Exporta o importa la lista de poses en JSON. Importar no mueve el brazo.</div>
+<div class="button-row">
 <button id="btnExport" class="btn-soft">⬇ Exportar poses</button>
 <button id="btnImport" class="btn-soft">⬆ Importar poses</button>
 </div>
@@ -226,11 +216,10 @@
 <label><input id="programLoop" type="checkbox"> Ejecutar en bucle</label>
 </div>
 <div class="button-row" style="margin-top:10px">
-<button id="btnValidate" class="btn-soft">✅ Validar</button>
 <button id="btnExportProg" class="btn-soft">⬇ Exportar JSON</button>
 <button id="btnImportProg" class="btn-soft">⬆ Importar JSON</button>
 <button id="btnSendProg" class="btn-primary" disabled>📤 Enviar al ESP32</button>
-<button id="btnRunProg" class="btn-play" disabled>▶ Ejecutar</button>
+<button id="btnRunProg" class="btn-play" disabled>▶ Ejecutar programa</button>
 <button id="btnStopProg" class="btn-danger" disabled>⏹ Detener</button>
 </div>
 <textarea id="progJson" class="jsonbox" placeholder="JSON del programa">
@@ -273,13 +262,19 @@ const setValue=(id,value)=>{const node=el(id);if(node)node.value=value;};
 const setHtml=(id,html)=>{const node=el(id);if(node)node.innerHTML=html;};
 const on=(id,event,handler)=>{const node=el(id);if(!node){console.warn(`Elemento no encontrado: #${id}`);return false;}node.addEventListener(event,handler);return true;};
 const onClick=(id,handler)=>on(id,"click",handler);
-let port,writer,reader,rx="",poses=[],inputs=[],outputs=[],program=[],programLoop=false,isPlaying=false,playAbort=false;
+let port,writer,reader,rx="",poses=[],inputs=[],outputs=[],program=[],programLoop=false,isProgramBusy=false,selectedPoseIndex=-1;
 const storageKey="tfg_robotica_v2";
-function log(line,cls="rx"){const root=el("log");if(!root){console.log(line);return;}const d=document.createElement("div");d.className=cls;d.textContent=new Date().toLocaleTimeString()+"  "+line;root.appendChild(d);root.scrollTop=root.scrollHeight;}
+const commandPauseMs=35;
+const delayMs=ms=>new Promise(r=>setTimeout(r,ms));
+function log(line,cls="rx"){const root=el("log");const prefix={tx:"TX",rx:"RX",err:"ERROR",run:"RUN",info:"INFO"}[cls]||cls.toUpperCase();const text=`${prefix}  ${line}`;if(!root){console.log(text);return;}const d=document.createElement("div");d.className=cls;d.textContent=new Date().toLocaleTimeString()+"  "+text;root.appendChild(d);root.scrollTop=root.scrollHeight;}
 function st(t,state="warning"){const status=el("st");if(status)status.textContent=t;const dot=document.querySelector(".status-dot");if(dot){dot.classList.toggle("connected",state==="connected");dot.classList.toggle("error",state==="error");}}
+function isConnected(){return Boolean(writer);}
 function saveToStorage(){try{localStorage.setItem(storageKey,JSON.stringify({poses,inputs,outputs,program,programLoop}));}catch(e){console.warn("No se pudo guardar en localStorage",e);}}
 function loadFromStorage(){try{const d=JSON.parse(localStorage.getItem(storageKey)||"{}");poses=Array.isArray(d.poses)?d.poses:[];inputs=Array.isArray(d.inputs)?d.inputs:[];outputs=Array.isArray(d.outputs)?d.outputs:[];program=Array.isArray(d.program)?d.program:[];programLoop=Boolean(d.programLoop);setProgramLoopCheckbox();}catch{poses=[];inputs=[];outputs=[];program=[];programLoop=false;}renderAll();}
-function setControlsEnabled(v){["btnHome","btnQuery","btnSave","btnPlay","btnStopPlay","btnPing","btnStatus","btnSendProg","btnRunProg","btnStopProg"].forEach(id=>{const node=el(id);if(node)node.disabled=!v;});}
+function selectedPose(){return selectedPoseIndex>=0?poses[selectedPoseIndex]:null;}
+function setControlsEnabled(){updateControlStates();}
+function updateControlStates(){const connected=isConnected();const hasProgram=program.length>0;const hasPose=Boolean(selectedPose());["btnHome","btnPing","btnStatus","btnStopMain"].forEach(id=>{const node=el(id);if(node)node.disabled=!connected;});["btnSendProg","btnRunProg"].forEach(id=>{const node=el(id);if(node)node.disabled=!connected||isProgramBusy||!hasProgram;});const stopProg=el("btnStopProg");if(stopProg)stopProg.disabled=!connected;const goPose=el("btnGoPose");if(goPose)goPose.disabled=!connected||isProgramBusy||!hasPose;const save=el("btnSave");if(save)save.disabled=!connected||isProgramBusy;const del=el("btnDelete");if(del)del.disabled=!hasPose;document.querySelectorAll('#joints input,#spd,#spdN,#v1,#v1N,#v2,#v2N,#v3,#v3N,#acc,#accN').forEach(node=>{node.disabled=!connected||isProgramBusy;});}
+function setProgramBusy(v){isProgramBusy=Boolean(v);updateControlStates();}
 async function connect(){
   if(writer){st("Ya estás conectado al ESP32.","connected");return;}
   if (!("serial" in navigator)){st("WebSerial no disponible. Usa Chrome/Edge desde HTTPS o localhost.","error");return;}
@@ -290,46 +285,48 @@ async function connect(){
     port=await navigator.serial.requestPort();
     await port.open({baudRate:115200});
     writer=port.writable.getWriter();
-    setControlsEnabled(true);
+    updateControlStates();
     if(btn)btn.textContent="✅ Conectado";
     st("Conectado al ESP32 a 115200.","connected");
-    log("Puerto abierto","run");
+    log("Puerto abierto","info");
     readLoop();
     await sendLine("<PING>");
   }catch(e){
     writer=null;
     port=null;
-    setControlsEnabled(false);
+    setProgramBusy(false);
+    updateControlStates();
     if(btn){btn.disabled=false;btn.textContent="🔌 Conectar";}
     st("No se pudo conectar: "+(e?.message||e),"error");
+    log("No se pudo conectar: "+(e?.message||e),"err");
   }
 }
-async function readLoop(){const dec=new TextDecoderStream();port.readable.pipeTo(dec.writable).catch(()=>{});reader=dec.readable.getReader();try{while(true){const {value,done}=await reader.read();if(done)break;if(value)handleText(value);}}catch(e){log("Lectura cerrada: "+e,"err");}finally{writer=null;reader=null;setControlsEnabled(false);const btn=el("btnConn");if(btn){btn.disabled=false;btn.textContent="🔌 Conectar";}st("Puerto serie cerrado.","warning");}}
+async function readLoop(){const dec=new TextDecoderStream();port.readable.pipeTo(dec.writable).catch(e=>log("Lectura cerrada: "+(e?.message||e),"err"));reader=dec.readable.getReader();try{while(true){const {value,done}=await reader.read();if(done)break;if(value)handleText(value);}}catch(e){log("Lectura cerrada: "+(e?.message||e),"err");}finally{writer=null;reader=null;setProgramBusy(false);updateControlStates();const btn=el("btnConn");if(btn){btn.disabled=false;btn.textContent="🔌 Conectar";}st("Puerto serie cerrado.","warning");}}
 function handleText(t){for(const c of t){if(c==='\r'||c==='\n')continue;if(c==='<')rx="";rx+=c;if(c==='>'){handleFrame(rx);rx="";}}}
-function handleFrame(f){let cls=f.includes("<ERR")||f.includes("ERROR")?"err":f.includes("RUN,")?"run":"rx";log(f,cls);if(f.startsWith("<T,")){const vals=f.slice(3,-1).split(',').map(Number);if(vals.length===N)vals.forEach((v,i)=>{setValue(`j${i}`,v);setValue(`j${i}n`,v);});}if(f.startsWith("<S,")){const v=clamp(f.slice(3,-1),1,180);setValue("spd",v);setValue("spdN",v);}if(f.startsWith("<V,")){const v=f.slice(3,-1).split(',');["v1","v2","v3"].forEach((id,i)=>{const n=clamp(v[i],1,180);setValue(id,n);setValue(id+"N",n);});}if(f.startsWith("<A,")){const v=clamp(f.slice(3,-1),10,1200);setValue("acc",v);setValue("accN",v);}if(f.startsWith("<RUN,STEP"))st("Ejecutando "+f);if(f==="<RUN,DONE>"||f==="<RUN,STOPPED>"||f==="<RUN,LOOP>")st(f);}
-async function sendLine(line){if(!writer){st("No conectado.","error");return;}await writer.write(new TextEncoder().encode(line+"\n"));log(line,"tx");}
+function handleFrame(f){let cls=f.includes("<ERR")||f.includes("ERROR")?"err":f.includes("RUN,")?"run":"rx";log(f,cls);if(f.startsWith("<ERR,")){st("Error ESP32: "+f.slice(5,-1),"error");setProgramBusy(false);}if(f.startsWith("<T,")){const vals=f.slice(3,-1).split(',').map(Number);if(vals.length===N)vals.forEach((v,i)=>{setValue(`j${i}`,v);setValue(`j${i}n`,v);});}if(f.startsWith("<S,")){const v=clamp(f.slice(3,-1),1,180);setValue("spd",v);setValue("spdN",v);}if(f.startsWith("<V,")){const v=f.slice(3,-1).split(',');["v1","v2","v3"].forEach((id,i)=>{const n=clamp(v[i],1,180);setValue(id,n);setValue(id+"N",n);});}if(f.startsWith("<A,")){const v=clamp(f.slice(3,-1),10,1200);setValue("acc",v);setValue("accN",v);}if(f.startsWith("<RUN,STEP"))st("Ejecutando paso "+f.replace(/[<>]/g,""),"connected");if(f==="<RUN,DONE>"){st("Programa finalizado.","connected");setProgramBusy(false);}if(f==="<RUN,STOPPED>"){st("Programa detenido.","warning");setProgramBusy(false);}if(f==="<RUN,LOOP>"){st("Programa en bucle...","connected");}}
+async function sendLine(line,{pause=true}={}){if(!writer){st("No conectado.","error");log("No conectado al intentar enviar "+line,"err");return false;}try{await writer.write(new TextEncoder().encode(line+"\n"));log(line,"tx");if(pause)await delayMs(commandPauseMs);return true;}catch(e){const msg="Fallo enviando "+line+": "+(e?.message||e);st(msg,"error");log(msg,"err");setProgramBusy(false);return false;}}
 function buildJoints(){const root=el("joints");if(!root){console.warn("Elemento no encontrado: #joints");return;}root.innerHTML="";names.forEach((n,i)=>{const r=document.createElement("div");r.className="row";r.innerHTML=`<div class="joint-label">
 <span class="joint-index">${n}</span>
 <b>${i===6?'Pinza':'Articulación'}</b>
 </div>
 <input id="j${i}" type="range" min="${mins[i]}" max="${maxs[i]}" value="${home[i]}">
 <input id="j${i}n" type="number" min="${mins[i]}" max="${maxs[i]}" value="${home[i]}">`;root.appendChild(r);on(`j${i}`,"input",()=>{setValue(`j${i}n`,getValue(`j${i}`,home[i]));queueSendPose();});on(`j${i}n`,"input",()=>{setValue(`j${i}`,clamp(getValue(`j${i}n`,home[i]),mins[i],maxs[i]));queueSendPose();});});}
-let poseTimer,spdTimer,vTimer,accTimer;function queueSendPose(){if(!writer||isPlaying)return;clearTimeout(poseTimer);poseTimer=setTimeout(()=>sendPose(),40);}function queueSendSpeed(){if(!writer)return;clearTimeout(spdTimer);spdTimer=setTimeout(sendSpeed,120);}function queueSendV(){if(!writer)return;clearTimeout(vTimer);vTimer=setTimeout(sendV,120);}function queueSendAccel(){if(!writer)return;clearTimeout(accTimer);accTimer=setTimeout(sendAccel,120);}function currentVals(){return Array.from({length:N},(_,i)=>clamp(getValue(`j${i}`,home[i]),mins[i],maxs[i]));}async function sendPose(vals=currentVals()){await sendLine(`<P,${vals.join(",")}>`);}async function sendSpeed(){await sendLine(`<S,${clamp(getValue("spd",60),1,180)}>`);}async function sendV(){await sendLine(`<V,${clamp(getValue("v1",60),1,180)},${clamp(getValue("v2",60),1,180)},${clamp(getValue("v3",60),1,180)}>`);}async function sendAccel(){await sendLine(`<A,${clamp(getValue("acc",300),10,1200)}>`);}
-function hookRanges(){[["spd","spdN",1,180,queueSendSpeed],["v1","v1N",1,180,queueSendV],["v2","v2N",1,180,queueSendV],["v3","v3N",1,180,queueSendV],["acc","accN",10,1200,queueSendAccel],["delay","delayN",100,5000,()=>{}]].forEach(([a,b,min,max,cb])=>{const range=el(a),num=el(b);if(!range||!num){console.warn(`Rango incompleto: #${a}/#${b}`);return;}range.addEventListener("input",()=>{num.value=range.value;cb();});num.addEventListener("input",()=>{range.value=clamp(num.value,min,max);cb();});});}
-function renderPoseList(){setHtml("poseList",poses.map((p,i)=>`<option value="${i}">${i+1}. ${esc(p.name)} [${p.vals.join(', ')}]</option>`).join(""));}
+let poseTimer,spdTimer,vTimer,accTimer;function queueSendPose(){if(!writer||isProgramBusy)return;clearTimeout(poseTimer);poseTimer=setTimeout(()=>sendPose(),40);}function queueSendSpeed(){if(!writer)return;clearTimeout(spdTimer);spdTimer=setTimeout(sendSpeed,120);}function queueSendV(){if(!writer)return;clearTimeout(vTimer);vTimer=setTimeout(sendV,120);}function queueSendAccel(){if(!writer)return;clearTimeout(accTimer);accTimer=setTimeout(sendAccel,120);}function currentVals(){return Array.from({length:N},(_,i)=>clamp(getValue(`j${i}`,home[i]),mins[i],maxs[i]));}async function sendPose(vals=currentVals()){await sendLine(`<P,${vals.join(",")}>`);}async function sendSpeed(){await sendLine(`<S,${clamp(getValue("spd",60),1,180)}>`);}async function sendV(){await sendLine(`<V,${clamp(getValue("v1",60),1,180)},${clamp(getValue("v2",60),1,180)},${clamp(getValue("v3",60),1,180)}>`);}async function sendAccel(){await sendLine(`<A,${clamp(getValue("acc",300),10,1200)}>`);}
+function hookRanges(){[["spd","spdN",1,180,queueSendSpeed],["v1","v1N",1,180,queueSendV],["v2","v2N",1,180,queueSendV],["v3","v3N",1,180,queueSendV],["acc","accN",10,1200,queueSendAccel]].forEach(([a,b,min,max,cb])=>{const range=el(a),num=el(b);if(!range||!num){console.warn(`Rango incompleto: #${a}/#${b}`);return;}range.addEventListener("input",()=>{num.value=range.value;cb();});num.addEventListener("input",()=>{range.value=clamp(num.value,min,max);cb();});});}
+function renderPoseList(){if(selectedPoseIndex>=poses.length)selectedPoseIndex=poses.length-1;setHtml("poseList",poses.map((p,i)=>`<option value="${i}" ${i===selectedPoseIndex?"selected":""}>${i+1}. ${esc(p.name)} [${p.vals.join(', ')}]</option>`).join(""));updateControlStates();}
 function renderIO(){setHtml("inputsList",inputs.map((x,i)=>`<div class="io-card">
 <b>${esc(x.name)} · GPIO ${x.pin}</b>
 <span class="small">${x.mode}, activo ${x.activeState}</span>
 <div class="button-row">
-<button onclick="readInput(${i})">Leer</button>
+<button ${!isConnected()?"disabled":""} onclick="readInput(${i})">Leer</button>
 <button class="btn-danger" onclick="removeInput(${i})">Eliminar</button>
 </div>
 </div>`).join(""));setHtml("outputsList",outputs.map((x,i)=>`<div class="io-card">
 <b>${esc(x.name)} · GPIO ${x.pin}</b>
 <span class="small">Estado inicial ${x.initialState?'ON':'OFF'} · actual ${x.value?'ON':'OFF'}</span>
 <div class="button-row">
-<button onclick="setOutput(${i},1)">ON</button>
-<button onclick="setOutput(${i},0)">OFF</button>
+<button ${!isConnected()?"disabled":""} onclick="setOutput(${i},1)">ON</button>
+<button ${!isConnected()?"disabled":""} onclick="setOutput(${i},0)">OFF</button>
 <button class="btn-danger" onclick="removeOutput(${i})">Eliminar</button>
 </div>
 </div>`).join(""));}
@@ -345,7 +342,7 @@ function renderProgram(){setProgramLoopCheckbox();const {inOpts,outOpts,poseOpts
 <button onclick="moveStep(${i},1)">↓</button>
 <button onclick="dupStep(${i})">Duplicar</button>
 <button class="btn-danger" onclick="delStep(${i})">Borrar</button>
-</div>${stepEditor(s,i,inOpts,outOpts,poseOpts)}</div>`).join(""));}
+</div>${stepEditor(s,i,inOpts,outOpts,poseOpts)}</div>`).join(""));updateControlStates();}
 function stepEditor(s,i,inOpts,outOpts,poseOpts){if(s.type==="POSE")return `<div class="field-grid">
 <select onchange="applyPoseRef(${i},this.value)">
 <option value="">Usar valores editados</option>${poseOpts}</select>${names.map((n,j)=>`<input type="number" min="${mins[j]}" max="${maxs[j]}" value="${s.vals[j]}" onchange="program[${i}].vals[${j}]=clamp(this.value,${mins[j]},${maxs[j]});saveToStorage()" title="${n}">`).join("")}<input type="number" value="${s.delayMs||0}" onchange="program[${i}].delayMs=clamp(this.value,0,600000);saveToStorage()" title="Delay ms">
@@ -378,38 +375,40 @@ async function sendIoConfig(){if(!writer)return;await sendLine("<IN,CLEAR>");for
 function addStep(){const t=getValue("stepType","POSE");let s={type:t};if(t==="POSE")s={type:t,source:"current",vals:currentVals(),delayMs:0};if(t==="OUT")s={type:t,id:outputs[0]?.id||"",value:1};if(t==="WAIT_IN")s={type:t,id:inputs[0]?.id||"",state:"ACTIVE",timeoutMs:5000};if(t==="PAUSE")s={type:t,durationMs:1000};if(t==="SPEED")s={type:t,s:clamp(getValue("spd",60),1,180),v1:clamp(getValue("v1",60),1,180),v2:clamp(getValue("v2",60),1,180),v3:clamp(getValue("v3",60),1,180),a:clamp(getValue("acc",300),10,1200)};if(t==="IF_INPUTS")s={type:t,id:inputs[0]?.id||"",id2:inputs[1]?.id||inputs[0]?.id||"",targetBoth:0,targetOne:0,targetElse:0};if(t==="JUMP")s={type:t,targetBoth:1};program.push(s);saveToStorage();renderProgram();}
 function delStep(i){program.splice(i,1);saveToStorage();renderProgram();}function dupStep(i){program.splice(i+1,0,JSON.parse(JSON.stringify(program[i])));saveToStorage();renderProgram();}function moveStep(i,d){const j=i+d;if(j<0||j>=program.length)return;[program[i],program[j]]=[program[j],program[i]];saveToStorage();renderProgram();}function applyPoseRef(i,v){const pose=poses[Number(v)];if(v!==""&&pose){program[i].source="saved";program[i].poseIndex=Number(v);program[i].vals=[...pose.vals];saveToStorage();renderProgram();}}
 function validTarget(t,allowContinue=true){const n=Number(t);return (allowContinue&&n===0)||(n>=1&&n<=program.length);}
-function validateProgram(show=true){const errs=[];program.forEach((s,i)=>{if(s.type==="POSE"&&(!Array.isArray(s.vals)||s.vals.length!==N))errs.push(`#${i+1} pose inválida`);if(s.type==="OUT"&&!outputs.some(o=>o.id===s.id))errs.push(`#${i+1} salida no configurada`);if(s.type==="WAIT_IN"&&!inputs.some(x=>x.id===s.id))errs.push(`#${i+1} entrada no configurada`);if(s.type==="IF_INPUTS"){if(!inputs.some(x=>x.id===s.id)||!inputs.some(x=>x.id===s.id2))errs.push(`#${i+1} condición con entradas no configuradas`);if(!validTarget(s.targetBoth)||!validTarget(s.targetOne)||!validTarget(s.targetElse))errs.push(`#${i+1} condición con destino inválido`);}if(s.type==="JUMP"&&!validTarget(s.targetBoth,false))errs.push(`#${i+1} salto con destino inválido`);});if(show)st(errs.length?"Errores: "+errs.join("; "):"Programa válido.");return errs;}
-async function sendProgram(){if(validateProgram(false).length){st("Corrige errores antes de enviar.");return;}await sendIoConfig();await sendLine("<PROG,CLEAR>");await sendLine(`<PROG,LOOP,${programLoop?1:0}>`);for(const s of program){if(s.type==="POSE")await sendLine(`<PROG,ADD,POSE,${s.vals.map((v,i)=>clamp(v,mins[i],maxs[i])).join(',')},${clamp(s.delayMs||0,0,600000)}>`);if(s.type==="OUT")await sendLine(`<PROG,ADD,OUT,${s.id},${s.value?1:0}>`);if(s.type==="WAIT_IN")await sendLine(`<PROG,ADD,WAIT_IN,${s.id},${s.state},${clamp(s.timeoutMs||0,0,600000)}>`);if(s.type==="PAUSE")await sendLine(`<PROG,ADD,PAUSE,${clamp(s.durationMs||0,0,600000)}>`);if(s.type==="SPEED")await sendLine(`<PROG,ADD,SPEED,${clamp(s.s,1,180)},${clamp(s.v1,1,180)},${clamp(s.v2,1,180)},${clamp(s.v3,1,180)},${clamp(s.a,10,1200)}>`);if(s.type==="HOME")await sendLine("<PROG,ADD,HOME>");if(s.type==="IF_INPUTS")await sendLine(`<PROG,ADD,IF_INPUTS,${s.id},${s.id2},${Number(s.targetBoth)||0},${Number(s.targetOne)||0},${Number(s.targetElse)||0}>`);if(s.type==="JUMP")await sendLine(`<PROG,ADD,JUMP,${Number(s.targetBoth)||1}>`);}st("Programa enviado al ESP32.");}
-function exportProgram(){setValue("progJson",JSON.stringify({inputs,outputs,program,programLoop},null,2));}function importProgram(){try{const d=JSON.parse(getValue("progJson",""));if(Array.isArray(d.inputs))inputs=d.inputs;if(Array.isArray(d.outputs))outputs=d.outputs;if(Array.isArray(d.program))program=d.program;programLoop=Boolean(d.programLoop);saveToStorage();renderAll();st("Programa JSON importado.");}catch{st("JSON inválido.");}}
-function savePose(){poses.push({name:`Pose ${poses.length+1}`,vals:currentVals()});saveToStorage();renderAll();}function deleteSelectedPose(){const list=el("poseList");const i=list?list.selectedIndex:-1;if(i>=0){poses.splice(i,1);saveToStorage();renderAll();}}function clearPoses(){poses=[];saveToStorage();renderAll();}function exportPoses(){setValue("io",JSON.stringify(poses,null,2));}function importPoses(){try{const d=JSON.parse(getValue("io",""));if(!Array.isArray(d))throw 0;poses=d.filter(p=>Array.isArray(p.vals)&&p.vals.length===N).map((p,i)=>({name:String(p.name||`Pose ${i+1}`),vals:p.vals.map((v,j)=>clamp(v,mins[j],maxs[j]))}));saveToStorage();renderAll();}catch{st("Import: JSON inválido.");}}
-const delayMs=ms=>new Promise(r=>setTimeout(r,ms));async function playPoses(){if(!writer||!poses.length)return;isPlaying=true;playAbort=false;const btn=el("btnPlay");if(btn)btn.disabled=true;await sendSpeed();await sendV();await sendAccel();do{for(const p of poses){if(playAbort)break;await sendPose(p.vals);await delayMs(clamp(getValue("delay",1000),100,5000));}}while(el("loop")?.checked&&!playAbort);isPlaying=false;playAbort=false;if(btn)btn.disabled=false;}function stopPlay(){playAbort=true;st("Reproducción local parada.");}
+function validateProgram(show=true){const errs=[];if(!program.length)errs.push("El programa está vacío. Añade al menos un paso antes de ejecutar.");program.forEach((s,i)=>{if(s.type==="POSE"&&(!Array.isArray(s.vals)||s.vals.length!==N))errs.push(`#${i+1} pose inválida`);if(s.type==="OUT"&&!outputs.some(o=>o.id===s.id))errs.push(`#${i+1} usa una salida no configurada o borrada`);if(s.type==="WAIT_IN"&&!inputs.some(x=>x.id===s.id))errs.push(`#${i+1} usa una entrada no configurada o borrada`);if(s.type==="IF_INPUTS"){if(!inputs.some(x=>x.id===s.id)||!inputs.some(x=>x.id===s.id2))errs.push(`#${i+1} usa entradas no configuradas o borradas`);if(!validTarget(s.targetBoth)||!validTarget(s.targetOne)||!validTarget(s.targetElse))errs.push(`#${i+1} condición con destino inválido`);}if(s.type==="JUMP"&&!validTarget(s.targetBoth,false))errs.push(`#${i+1} salto con destino inválido`);});if(show)st(errs.length?"Errores: "+errs.join("; "):"Programa válido.",errs.length?"error":"connected");return errs;}
+async function sendProgram(){const errs=validateProgram(false);if(errs.length){st("Errores: "+errs.join("; "),"error");return false;}st("Enviando programa...","warning");try{await sendIoConfig();if(!await sendLine("<PROG,CLEAR>"))return false;if(!await sendLine(`<PROG,LOOP,${programLoop?1:0}>`))return false;for(const s of program){let line="";if(s.type==="POSE")line=`<PROG,ADD,POSE,${s.vals.map((v,i)=>clamp(v,mins[i],maxs[i])).join(',')},${clamp(s.delayMs||0,0,600000)}>`;if(s.type==="OUT")line=`<PROG,ADD,OUT,${s.id},${s.value?1:0}>`;if(s.type==="WAIT_IN")line=`<PROG,ADD,WAIT_IN,${s.id},${s.state},${clamp(s.timeoutMs||0,0,600000)}>`;if(s.type==="PAUSE")line=`<PROG,ADD,PAUSE,${clamp(s.durationMs||0,0,600000)}>`;if(s.type==="SPEED")line=`<PROG,ADD,SPEED,${clamp(s.s,1,180)},${clamp(s.v1,1,180)},${clamp(s.v2,1,180)},${clamp(s.v3,1,180)},${clamp(s.a,10,1200)}>`;if(s.type==="HOME")line="<PROG,ADD,HOME>";if(s.type==="IF_INPUTS")line=`<PROG,ADD,IF_INPUTS,${s.id},${s.id2},${Number(s.targetBoth)||0},${Number(s.targetOne)||0},${Number(s.targetElse)||0}>`;if(s.type==="JUMP")line=`<PROG,ADD,JUMP,${Number(s.targetBoth)||1}>`;if(line&&!await sendLine(line))return false;}st("Programa enviado.","connected");return true;}catch(e){const msg="Error enviando programa: "+(e?.message||e);st(msg,"error");log(msg,"err");return false;}}
+async function uploadProgramOnly(){if(isProgramBusy)return;const errs=validateProgram(false);if(errs.length){st("Errores: "+errs.join("; "),"error");return;}setProgramBusy(true);const ok=await sendProgram();setProgramBusy(false);if(ok)st("Programa enviado.","connected");}
+async function runProgram(){if(isProgramBusy)return;const errs=validateProgram(false);if(errs.length){st("Errores: "+errs.join("; "),"error");return;}setProgramBusy(true);const ok=await sendProgram();if(!ok){setProgramBusy(false);return;}st("Ejecutando...","connected");const sent=await sendLine("<PROG,RUN>");if(!sent)setProgramBusy(false);}
+async function stopProgram(){await sendLine("<PROG,STOP>");st("Parada solicitada.","warning");setProgramBusy(false);}
+function exportProgram(){setValue("progJson",JSON.stringify({inputs,outputs,program,programLoop},null,2));}function importProgram(){try{const d=JSON.parse(getValue("progJson",""));if(Array.isArray(d.inputs))inputs=d.inputs;if(Array.isArray(d.outputs))outputs=d.outputs;if(Array.isArray(d.program))program=d.program;programLoop=Boolean(d.programLoop);saveToStorage();renderAll();st("Programa JSON importado.");}catch{st("JSON inválido.","error");}}
+function savePose(){poses.push({name:`Pose ${poses.length+1}`,vals:currentVals()});selectedPoseIndex=poses.length-1;saveToStorage();renderAll();st("Pose actual guardada.","connected");}function deleteSelectedPose(){if(selectedPoseIndex>=0&&poses[selectedPoseIndex]){poses.splice(selectedPoseIndex,1);selectedPoseIndex=Math.min(selectedPoseIndex,poses.length-1);saveToStorage();renderAll();}}function clearPoses(){poses=[];selectedPoseIndex=-1;saveToStorage();renderAll();}function exportPoses(){setValue("io",JSON.stringify(poses,null,2));}function importPoses(){try{const d=JSON.parse(getValue("io",""));if(!Array.isArray(d))throw 0;poses=d.filter(p=>Array.isArray(p.vals)&&p.vals.length===N).map((p,i)=>({name:String(p.name||`Pose ${i+1}`),vals:p.vals.map((v,j)=>clamp(v,mins[j],maxs[j]))}));selectedPoseIndex=poses.length?0:-1;saveToStorage();renderAll();st("Poses importadas.","connected");}catch{st("Import: JSON inválido.","error");}}
+function selectPose(i){selectedPoseIndex=Number(i);const p=selectedPose();if(p)p.vals.forEach((v,j)=>{setValue(`j${j}`,v);setValue(`j${j}n`,v);});updateControlStates();}
+async function goToSelectedPose(){const p=selectedPose();if(!p){st("Selecciona una pose antes de mover el brazo.","error");return;}await sendPose(p.vals);st("Moviendo a pose guardada: "+p.name,"connected");}
 function hookButtonEvents(){
   onClick("btnConn",()=>connect().catch(e=>st("Error: "+e)));
   onClick("btnPing",()=>sendLine("<PING>"));
   onClick("btnStatus",()=>sendLine("<STATUS>"));
   onClick("btnHome",()=>sendLine("<H>"));
-  onClick("btnQuery",()=>sendLine("<Q>"));
+  onClick("btnStopMain",stopProgram);
   onClick("btnSave",savePose);
+  onClick("btnGoPose",goToSelectedPose);
   onClick("btnDelete",deleteSelectedPose);
   onClick("btnClear",clearPoses);
-  onClick("btnPlay",playPoses);
-  onClick("btnStopPlay",stopPlay);
   onClick("btnExport",exportPoses);
   onClick("btnImport",importPoses);
-  on("poseList","change",()=>{const list=el("poseList");const i=list?list.selectedIndex:-1;if(i>=0&&poses[i])poses[i].vals.forEach((v,j)=>{setValue(`j${j}`,v);setValue(`j${j}n`,v);});});
+  on("poseList","change",()=>{const list=el("poseList");selectPose(list?list.selectedIndex:-1);});
   onClick("btnAddIn",addInput);
   onClick("btnAddOut",addOutput);
   onClick("btnClearIn",()=>{inputs=[];saveToStorage();renderAll();sendLine("<IN,CLEAR>");});
   onClick("btnClearOut",()=>{outputs=[];saveToStorage();renderAll();sendLine("<OUT,CLEAR>");});
   onClick("btnAddStep",addStep);
-  onClick("btnClearProg",()=>{program=[];saveToStorage();renderProgram();});
+  onClick("btnClearProg",()=>{program=[];saveToStorage();renderProgram();st("Programa vacío. Añade pasos antes de ejecutar.");});
   on("programLoop","change",()=>{programLoop=Boolean(el("programLoop")?.checked);saveToStorage();});
-  onClick("btnValidate",()=>validateProgram());
   onClick("btnExportProg",exportProgram);
   onClick("btnImportProg",importProgram);
-  onClick("btnSendProg",sendProgram);
-  onClick("btnRunProg",()=>sendLine("<PROG,RUN>"));
-  onClick("btnStopProg",()=>sendLine("<PROG,STOP>"));
+  onClick("btnSendProg",uploadProgramOnly);
+  onClick("btnRunProg",runProgram);
+  onClick("btnStopProg",stopProgram);
   onClick("btnClearLog",()=>setHtml("log",""));
   console.log("Eventos de botones asignados");
 }
