@@ -94,7 +94,8 @@ No se usa WiFi, Bluetooth, React, Vite, Node ni frameworks web.
    - `Pausa` para retardos temporales.
    - `Velocidad` para enviar `<S>`, `<V>` y `<A>` al Arduino.
    - `Home` para enviar `<H>`.
-   - `Condición 2 entradas` para crear dos ramas: por ejemplo, si dos sensores están activos ir a una pose, si solo uno está activo ir a otra, y si ninguno está activo continuar o volver a comprobar.
+   - `Condición de entrada` para leer un sensor y elegir un destino si está activa o inactiva.
+   - `Condición lógica` para combinar una o dos entradas con opciones claras como “entrada A y entrada B están activas” o “entrada A está activa y entrada B no está activa”.
    - `Salto` para unir ramas o volver a un punto anterior del programa.
 3. Si quieres ejecución continua, marca **Ejecutar en bucle** en el editor; el ESP32 reiniciará el programa desde el paso 1 al terminar.
 4. Pulsa **Validar**.
