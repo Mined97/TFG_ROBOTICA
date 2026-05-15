@@ -214,6 +214,42 @@ void reportInput(byte idx) {
   Serial.println('>');
 }
 
+void reportInputCfg(byte idx) {
+  Serial.print("<IN,CFG,");
+  Serial.print(inputs[idx].id);
+  Serial.print(',');
+  Serial.print(inputs[idx].pin);
+  Serial.print(',');
+  Serial.print(inputs[idx].mode == INPUT_PULLUP ? "INPUT_PULLUP" : "INPUT");
+  Serial.print(',');
+  Serial.print(inputs[idx].activeState == HIGH ? "HIGH" : "LOW");
+  Serial.println('>');
+}
+
+void listInputs() {
+  for (byte i = 0; i < MAX_INPUTS; i++)
+    if (inputs[i].used)
+      reportInputCfg(i);
+  sendOk("IN_LIST");
+}
+
+void sendRunInputError(const String &code, int stepIdx, const String &id, int expected,
+                       int value, int active) {
+  Serial.print("<RUN,ERROR,");
+  Serial.print(code);
+  Serial.print(",step=");
+  Serial.print(stepIdx + 1);
+  Serial.print(",id=");
+  Serial.print(id);
+  Serial.print(",esperado=");
+  Serial.print(expected ? "ACTIVE" : "INACTIVE");
+  Serial.print(",valor=");
+  Serial.print(value == HIGH ? 1 : 0);
+  Serial.print(",activo=");
+  Serial.print(active);
+  Serial.println('>');
+}
+
 void reportOutput(byte idx) {
   Serial.print("<OUT,STATE,");
   Serial.print(outputs[idx].id);
@@ -366,7 +402,7 @@ void beginStep(ProgramStep &step) {
     int idx = findInput(step.id);
     if (idx < 0) {
       running = false;
-      Serial.println("<RUN,ERROR,ENTRADA_NO_ENCONTRADA>");
+      sendRunInputError("ENTRADA_NO_ENCONTRADA", currentStep, step.id, step.state, LOW, 0);
       return;
     }
     waitUntilMs = stepStartMs + step.timeoutMs;
@@ -389,7 +425,7 @@ void beginStep(ProgramStep &step) {
     int active2 = inputIsActive(step.id2, &ok2);
     if (!ok1 || !ok2) {
       running = false;
-      Serial.println("<RUN,ERROR,ENTRADA_NO_ENCONTRADA>");
+      sendRunInputError("ENTRADA_NO_ENCONTRADA", currentStep, step.id, step.state, LOW, 0);
       return;
     }
     int target = (active1 && active2) ? step.targetBoth
@@ -425,7 +461,7 @@ void serviceProgram() {
     int idx = findInput(step.id);
     if (idx < 0) {
       running = false;
-      Serial.println("<RUN,ERROR,ENTRADA_NO_ENCONTRADA>");
+      sendRunInputError("ENTRADA_NO_ENCONTRADA", currentStep, step.id, step.state, LOW, 0);
       return;
     }
     int value = readInputValue(idx);
@@ -435,7 +471,7 @@ void serviceProgram() {
       finishCurrentStep();
     } else if (step.timeoutMs > 0 && (long)(now - waitUntilMs) >= 0) {
       running = false;
-      Serial.println("<RUN,ERROR,TIMEOUT_ENTRADA>");
+      sendRunInputError("TIMEOUT_ENTRADA", currentStep, step.id, step.state, value, active);
     }
   }
 }
@@ -515,8 +551,11 @@ void handleEsp32Command(String frame) {
       inputs[idx].mode = (modeText == "INPUT_PULLUP") ? INPUT_PULLUP : INPUT;
       inputs[idx].activeState = activeState;
       pinMode(pin, inputs[idx].mode);
+      reportInputCfg(idx);
       reportInput(idx);
       sendOk("IN_ADD");
+    } else if (action == "LIST") {
+      listInputs();
     } else if (action == "READ") {
       if (count != 3) {
         sendErr("IN_READ_PARAMETROS");
