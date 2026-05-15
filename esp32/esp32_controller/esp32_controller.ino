@@ -21,6 +21,11 @@ struct DigitalInputCfg {
   int pin;
   byte mode;       // INPUT / INPUT_PULLUP
   int activeState; // HIGH / LOW
+  int rawValue;
+  int stableValue;
+  int lastRawValue;
+  unsigned long rawChangedAt;
+  bool initialized;
 };
 
 struct DigitalOutputCfg {
@@ -75,6 +80,7 @@ unsigned long stepStartMs = 0;
 unsigned long waitUntilMs = 0;
 unsigned long lastWaitInputReportMs = 0;
 const unsigned long WAIT_INPUT_REPORT_INTERVAL_MS = 300;
+const unsigned long INPUT_STABLE_MS = 40;
 
 String debugSafe(String frame) {
   frame.replace("<", "[");
@@ -200,8 +206,37 @@ int findOutput(const String &id) {
   return -1;
 }
 
+void sampleInput(byte idx) {
+  if (!inputs[idx].used)
+    return;
+  int raw = digitalRead(inputs[idx].pin) == HIGH ? HIGH : LOW;
+  unsigned long now = millis();
+  if (!inputs[idx].initialized) {
+    inputs[idx].rawValue = raw;
+    inputs[idx].stableValue = raw;
+    inputs[idx].lastRawValue = raw;
+    inputs[idx].rawChangedAt = now;
+    inputs[idx].initialized = true;
+    return;
+  }
+  inputs[idx].rawValue = raw;
+  if (raw != inputs[idx].lastRawValue) {
+    inputs[idx].lastRawValue = raw;
+    inputs[idx].rawChangedAt = now;
+  }
+  if (raw != inputs[idx].stableValue &&
+      (long)(now - inputs[idx].rawChangedAt) >= (long)INPUT_STABLE_MS)
+    inputs[idx].stableValue = raw;
+}
+
+void sampleInputs() {
+  for (byte i = 0; i < MAX_INPUTS; i++)
+    sampleInput(i);
+}
+
 int readInputValue(byte idx) {
-  return digitalRead(inputs[idx].pin) == HIGH ? HIGH : LOW;
+  sampleInput(idx);
+  return inputs[idx].stableValue == HIGH ? HIGH : LOW;
 }
 
 void reportInput(byte idx) {
@@ -239,6 +274,7 @@ void clearOutputs() {
 void clearProgram() {
   running = false;
   stepActive = false;
+  currentStep = 0;
   programCount = 0;
   programLoop = false;
   Serial.println("<PROG,LOADED,0>");
@@ -267,14 +303,35 @@ bool appendStep(const ProgramStep &step) {
 }
 
 void sendProgramStatus() {
-  Serial.print("<OK,PROG_STATUS,count=");
+  Serial.print("<PROG,STATUS,");
   Serial.print(programCount);
-  Serial.print(",running=");
+  Serial.print(',');
   Serial.print(running ? 1 : 0);
-  Serial.print(",loop=");
+  Serial.print(',');
   Serial.print(programLoop ? 1 : 0);
-  Serial.print(",step=");
-  Serial.print(currentStep);
+  Serial.print(',');
+  Serial.print(currentStep + 1);
+  Serial.println('>');
+}
+
+void listInputs() {
+  byte count = 0;
+  for (byte i = 0; i < MAX_INPUTS; i++) {
+    if (!inputs[i].used)
+      continue;
+    count++;
+    Serial.print("<IN,CFG,");
+    Serial.print(inputs[i].id);
+    Serial.print(',');
+    Serial.print(inputs[i].pin);
+    Serial.print(',');
+    Serial.print(inputs[i].mode == INPUT_PULLUP ? "INPUT_PULLUP" : "INPUT");
+    Serial.print(',');
+    Serial.print(inputs[i].activeState == HIGH ? "HIGH" : "LOW");
+    Serial.println('>');
+  }
+  Serial.print("<IN,LIST,DONE,");
+  Serial.print(count);
   Serial.println('>');
 }
 
@@ -494,6 +551,8 @@ void handleEsp32Command(String frame) {
     action.toUpperCase();
     if (action == "CLEAR")
       clearInputs();
+    else if (action == "LIST")
+      listInputs();
     else if (action == "ADD") {
       if (count != 6) {
         sendErr("IN_ADD_PARAMETROS");
@@ -534,7 +593,9 @@ void handleEsp32Command(String frame) {
       inputs[idx].pin = pin;
       inputs[idx].mode = (modeText == "INPUT_PULLUP") ? INPUT_PULLUP : INPUT;
       inputs[idx].activeState = activeState;
+      inputs[idx].initialized = false;
       pinMode(pin, inputs[idx].mode);
+      sampleInput(idx);
       reportInput(idx);
       sendOk("IN_ADD");
     } else if (action == "READ") {
@@ -705,6 +766,10 @@ void handleEsp32Command(String frame) {
         }
         step.type = STEP_OUT;
         step.id = parts[3];
+        if (findOutput(step.id) < 0) {
+          sendErr("SALIDA_NO_ENCONTRADA");
+          return;
+        }
         bool ok = false;
         step.value = parseBoolState(parts[4], &ok) == HIGH ? 1 : 0;
         if (!ok) {
@@ -718,6 +783,10 @@ void handleEsp32Command(String frame) {
         }
         step.type = STEP_WAIT_IN;
         step.id = parts[3];
+        if (findInput(step.id) < 0) {
+          sendErr("ENTRADA_NO_ENCONTRADA");
+          return;
+        }
         String desired = String(parts[4]);
         desired.toUpperCase();
         if (desired == "ACTIVE" || desired == "ACTIVA" || desired == "1")
@@ -762,6 +831,10 @@ void handleEsp32Command(String frame) {
         step.type = STEP_IF_INPUTS;
         step.id = parts[3];
         step.id2 = parts[4];
+        if (findInput(step.id) < 0 || findInput(step.id2) < 0) {
+          sendErr("ENTRADA_NO_ENCONTRADA");
+          return;
+        }
         step.targetBoth = atoi(parts[5]);
         step.targetOne = atoi(parts[6]);
         step.targetElse = atoi(parts[7]);
@@ -826,5 +899,6 @@ void setup() {
 void loop() {
   readFrames(Serial, usbBuffer, true);
   readFrames(Serial2, arduinoBuffer, false);
+  sampleInputs();
   serviceProgram();
 }
