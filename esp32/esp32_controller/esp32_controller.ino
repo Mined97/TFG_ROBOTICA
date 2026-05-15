@@ -73,6 +73,8 @@ byte currentStep = 0;
 bool stepActive = false;
 unsigned long stepStartMs = 0;
 unsigned long waitUntilMs = 0;
+unsigned long lastWaitInputReportMs = 0;
+const unsigned long WAIT_INPUT_REPORT_INTERVAL_MS = 300;
 
 String debugSafe(String frame) {
   frame.replace("<", "[");
@@ -370,6 +372,8 @@ void beginStep(ProgramStep &step) {
       return;
     }
     waitUntilMs = stepStartMs + step.timeoutMs;
+    lastWaitInputReportMs = stepStartMs;
+    reportInput(idx);
   } else if (step.type == STEP_PAUSE) {
     waitUntilMs = stepStartMs + step.durationMs;
     if (step.durationMs == 0)
@@ -430,12 +434,28 @@ void serviceProgram() {
     }
     int value = readInputValue(idx);
     int active = (value == inputs[idx].activeState) ? 1 : 0;
-    reportInput(idx);
+    if ((long)(now - lastWaitInputReportMs) >=
+        (long)WAIT_INPUT_REPORT_INTERVAL_MS) {
+      reportInput(idx);
+      lastWaitInputReportMs = now;
+    }
     if (active == step.state) {
+      reportInput(idx);
       finishCurrentStep();
     } else if (step.timeoutMs > 0 && (long)(now - waitUntilMs) >= 0) {
+      reportInput(idx);
       running = false;
-      Serial.println("<RUN,ERROR,TIMEOUT_ENTRADA>");
+      Serial.print("<RUN,ERROR,TIMEOUT_ENTRADA,step=");
+      Serial.print(currentStep + 1);
+      Serial.print(",id=");
+      Serial.print(step.id);
+      Serial.print(",esperado=");
+      Serial.print(step.state ? "ACTIVE" : "INACTIVE");
+      Serial.print(",valor=");
+      Serial.print(value == HIGH ? 1 : 0);
+      Serial.print(",activo=");
+      Serial.print(active);
+      Serial.println('>');
     }
   }
 }
